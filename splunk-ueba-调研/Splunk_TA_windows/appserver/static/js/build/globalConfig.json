@@ -1,0 +1,10 @@
+{
+    "meta": {
+        "name": "Splunk_TA_windows",
+        "restRoot": "Splunk_TA_windows",
+        "displayName": "Splunk Add-on for Microsoft Windows",
+        "version": "11.0.2",
+        "schemaVersion": "0.0.10",
+        "_uccVersion": "6.5.2"
+    }
+}

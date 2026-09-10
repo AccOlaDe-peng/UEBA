@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "知识管理 × UEBA 基线:从原始日志到实体风险分",
+    "locale": "zh-CN",
+    "output": "splunk-ueba-调研/diagrams/knowledge-ueba-baseline.dataflow.html",
+    "viewBox": [
+      1080,
+      640
+    ],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    {
+      "label": "原始数据"
+    },
+    {
+      "label": "字段层"
+    },
+    {
+      "label": "语义层"
+    },
+    {
+      "label": "基线学习"
+    },
+    {
+      "label": "检测输出"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "winlog",
+      "type": "backend",
+      "label": "Windows 事件",
+      "sublabel": "登录 / 进程 / 文件",
+      "stage": 0,
+      "row": 0,
+      "tag": "端点"
+    },
+    {
+      "id": "netflow",
+      "type": "external",
+      "label": "网络流量",
+      "sublabel": "Zeek / 防火墙 / 代理",
+      "stage": 0,
+      "row": 2,
+      "tag": "流量"
+    },
+    {
+      "id": "ta",
+      "type": "messagebus",
+      "label": "TA 解析",
+      "sublabel": "字段提取与别名",
+      "stage": 1,
+      "row": 1,
+      "tag": "props/transforms"
+    },
+    {
+      "id": "cim",
+      "type": "database",
+      "label": "CIM 数据模型",
+      "sublabel": "统一事件语义",
+      "stage": 2,
+      "row": 1,
+      "tag": "6 大模型"
+    },
+    {
+      "id": "lookup",
+      "type": "database",
+      "label": "Lookup 维表",
+      "sublabel": "资产库 · 身份库",
+      "stage": 3,
+      "row": 3,
+      "tag": "上下文"
+    },
+    {
+      "id": "entity",
+      "type": "backend",
+      "label": "实体画像",
+      "sublabel": "per User / Device",
+      "stage": 3,
+      "row": 0,
+      "tag": "身份对齐"
+    },
+    {
+      "id": "baseline",
+      "type": "backend",
+      "label": "基线学习",
+      "sublabel": "最长 30 天 · 统计偏差",
+      "stage": 3,
+      "row": 2,
+      "tag": "peer group"
+    },
+    {
+      "id": "finding",
+      "type": "security",
+      "label": "Finding 产出",
+      "sublabel": "risk 索引 · 风险因子",
+      "stage": 4,
+      "row": 0,
+      "tag": "风险分"
+    },
+    {
+      "id": "ers",
+      "type": "security",
+      "label": "实体风险分 ERS",
+      "sublabel": "7 天窗口 · 0–100",
+      "stage": 4,
+      "row": 2,
+      "tag": "调查入口"
+    }
+  ],
+  "flows": [
+    {
+      "id": "win-to-ta",
+      "from": "winlog",
+      "to": "ta",
+      "label": "原始报文 _raw"
+    },
+    {
+      "id": "net-to-ta",
+      "from": "netflow",
+      "to": "ta",
+      "label": "异构日志"
+    },
+    {
+      "id": "ta-to-cim",
+      "from": "ta",
+      "to": "cim",
+      "label": "规范化字段",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cim-to-entity",
+      "from": "cim",
+      "to": "entity",
+      "label": "CIM 事件流"
+    },
+    {
+      "id": "cim-to-baseline",
+      "from": "cim",
+      "to": "baseline",
+      "label": "CIM 事件流"
+    },
+    {
+      "id": "lookup-to-baseline",
+      "from": "lookup",
+      "to": "baseline",
+      "label": "资产 / 身份上下文",
+      "variant": "dashed",
+      "labelDy": 4
+    },
+    {
+      "id": "entity-to-finding",
+      "from": "entity",
+      "to": "finding",
+      "label": "实体上下文",
+      "route": "straight"
+    },
+    {
+      "id": "baseline-to-finding",
+      "from": "baseline",
+      "to": "finding",
+      "label": "异常 finding",
+      "variant": "security"
+    },
+    {
+      "id": "finding-to-ers",
+      "from": "finding",
+      "to": "ers",
+      "label": "累积评分",
+      "variant": "emphasis",
+      "labelDy": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "知识管理是基线的前提",
+      "items": [
+        "TA 层做字段提取/别名,把各设备日志变成可查询字段",
+        "CIM 数据模型把异构事件统一成 Authentication、Network_Traffic 等语义",
+        "没有规范化,同一条基线规则无法跨设备复用"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "基线学习",
+      "items": [
+        "检测按实体(per User / Device)分组学习正常行为,需最长 30 天建立基线",
+        "Lookup 维表提供资产与身份上下文,把行为归到真实用户",
+        "产出是对统计偏差的 finding,而非逐条告警"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "检测输出",
+      "items": [
+        "finding 写入 risk 索引,带实体、ATT&CK 映射与 risk_score",
+        "ERS 按 7 天窗口把 finding 累积为 0–100 实体风险分",
+        "超阈值才触发告警,进入事件管理流程"
+      ]
+    }
+  ]
+}

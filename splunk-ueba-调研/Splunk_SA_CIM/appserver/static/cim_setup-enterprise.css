@@ -1,0 +1,390 @@
+.section-header {
+  border-bottom: 1px solid #C3CBD4;
+}
+.section-header .title {
+  margin-top: 0px;
+  margin-bottom: 0px;
+  font-size: 24px;
+}
+.cimSetupWrapper {
+  border: 1px solid #ccc;
+  margin: 30px auto;
+  width: 70%;
+  min-width: 1000px;
+}
+#cim_setup_container .modal-footer {
+  border-top: 1px solid #C3CBD4;
+}
+#cim_setup_container .modal-header {
+  border-bottom: 1px solid #C3CBD4;
+}
+#cim_setup_container .modal-body {
+  padding: 20px;
+}
+#cim_setup_container .alert {
+  font-size: 12px;
+}
+#cim_setup_container .alert .icon-alert {
+  font-size: 150%;
+  position: absolute;
+  left: 10px;
+  top: 5px;
+}
+.selectModelColumns {
+  position: relative;
+}
+.tab {
+  display: inline-block;
+}
+.layoutBodyColumns {
+  top: 0;
+  border-top: 1px solid #ccc;
+  bottom: 0;
+  background-color: #fff;
+  overflow: auto;
+  position: relative;
+}
+.layoutColLeft {
+  width: 360px;
+  background-color: #eee;
+}
+.layoutCol {
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.layoutColRight {
+  right: 0;
+  left: 360px;
+}
+.layoutColRight .tab-pane {
+  margin: 12px 0 12px 20px;
+}
+.tab-pane-main {
+  display: none;
+}
+.tab-pane-main.active {
+  display: block;
+}
+.layoutRow {
+  overflow: hidden;
+  left: 0;
+  right: 0;
+  min-height: 600px;
+}
+.scroll-y {
+  overflow-y: auto;
+}
+#initial_prompt {
+  left: 0;
+  right: 0;
+  top: 80px;
+  position: absolute;
+  font-size: 20px;
+  font-weight: 200;
+  text-align: center;
+  color: #999;
+}
+.inputForm {
+  margin: 20px;
+}
+.sideTabItem {
+  padding: 10px 30px 10px 20px;
+  position: relative;
+  font-size: 14px;
+  border-right: 1px solid #ccc;
+  margin-left: 40px;
+  cursor: pointer;
+  margin-right: -1px;
+}
+.sideTabItem:hover {
+  background: #DDD;
+}
+.sideTabList {
+  padding-top: 10px;
+  border-right: 1px solid #CCC;
+}
+.sideTabList .link-wrap {
+  display: block;
+  text-decoration: none !important;
+}
+.sideTabItem.selected {
+  color: #666;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-right: 0px;
+}
+.sideTabName {
+  line-height: 20px;
+}
+.indexes_list {
+  color: #999;
+  font-size: 11px;
+}
+.more {
+  text-decoration: underline;
+  color: #1e93c6;
+  cursor: pointer;
+  padding-left: 0.5em;
+}
+.col-visibility label.checkbox {
+  padding: 2px 0px 2px 0px;
+}
+.btn.nopointer {
+  pointer-events: none;
+  cursor: default;
+}
+.filter-control {
+  margin: 20px 0 10px 0;
+}
+.filter-control a.control-clear {
+  position: relative;
+  left: -25px;
+  top: 3px;
+  line-height: 22px;
+  font-size: 18px;
+  color: #999999;
+}
+
+.table-chrome.table-striped>tbody>tr:nth-child(odd)>td {
+  min-width: 20px;
+}
+
+.nav.nav-tabs {
+  border-top-style: none;
+  border-bottom: none;
+}
+
+.control.btn-group {
+  padding-top: 5px;
+}
+
+a.dropdown-toggle.disabled {
+  color: #999;
+}
+
+.timepicker-control-menu .btn {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+    border-left: none;
+}
+
+.shared-controls-multiinputcontrol {
+  display: inline-block
+}
+
+.number-text-container input,
+.number-text-container span {
+  min-width: 200px;
+}
+
+.indexes-whitelist-help.help-block {
+  margin-left: 0;
+}
+
+.settingsForm.form-horizontal .control-group {
+  margin-bottom: 10px;
+}
+
+.settingsForm.form-horizontal .control-label {
+  float: left;
+  width: 160px;
+  padding-top: 5px;
+  text-align: right;
+}
+
+.settingsForm.form-horizontal .controls {
+  margin-left: 180px;
+}
+
+.settingsForm.form-horizontal .controls > .help-block {
+  margin-left: 0;
+}
+
+.settingsForm.form-horizontal .help-block {
+  margin-bottom: 0;
+  margin-left: 180px;
+}
+
+.settingsForm.form-horizontal input + .help-block,
+.settingsForm.form-horizontal select + .help-block,
+.settingsForm.form-horizontal textarea + .help-block {
+  margin-top: 10px;
+}
+
+.settingsForm.form-horizontal .controls > input[type="text"] {
+  display: inline-block;
+  width: 390px;
+}
+
+.settingsForm.form-horizontal .controls > select {
+  display: inline-block;
+  width: auto;
+  min-width: 95px;
+  max-width: 220px;
+}
+
+.settingsForm.form-horizontal .controls > input[type="checkbox"] {
+  margin-top: 2px;
+}
+
+.settingsForm.form-horizontal .controls > input.settings-checkbox[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 6px 0 0;
+  border: 1px solid #9da5b0;
+  border-radius: 2px;
+  background: #fff;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+.settingsForm.form-horizontal .controls > input.settings-checkbox[type="checkbox"]:checked {
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3.5 8.5 6.5 11.5 12.5 4.5'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
+}
+
+.settingsForm.form-horizontal .controls > input.settings-checkbox[type="checkbox"]:disabled {
+  background-color: #f5f6f7;
+  border-color: #c3cbd4;
+  cursor: not-allowed;
+}
+
+.settingsForm.form-horizontal .time-modifier-field {
+  display: inline-flex;
+  align-items: center;
+}
+
+.settingsForm.form-horizontal .time-modifier-field .time-modifier-input {
+  display: inline-block;
+  width: 247px;
+  margin-right: 0;
+}
+
+.settingsForm.form-horizontal .time-modifier-field .time-modifier-unit {
+  display: inline-block;
+  width: 95px;
+  margin-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.settingsForm.form-horizontal .indexes-whitelist-help.help-block {
+  max-width: 360px;
+}
+
+#settings .settings-description-help .icon-alert,
+.settingsForm.form-horizontal .indexes-whitelist-help .icon-alert {
+  margin-right: 4px;
+}
+
+#settings .settings-description-help a .icon-external,
+.settingsForm.form-horizontal .indexes-whitelist-help a .icon-external {
+  margin-left: 4px;
+}
+
+#settings .settings-description-help {
+  line-height: 1.4;
+}
+
+.settingsForm.form-horizontal .indexes-whitelist-help .example-text {
+  margin-left: 4px;
+}
+
+.loading {
+  width: 100%;
+  text-align: center;
+  padding: 30px;
+}
+
+/* Manage API Styles */
+.layoutColRight .tab-pane.manageAPIKeyForm {
+    margin: 12px 20px;
+}
+
+.manageAPIKeyForm input{
+    width: 100%
+}
+
+.manageAPIKeyForm .actionButtons {
+    text-align: center;
+}
+
+.manageAPIKeyForm .actionButtons a {
+    width: 30%;
+    margin: 2px;
+}
+
+.manageAPIKeyForm .apiField {
+  margin-bottom: 16px;
+}
+
+.manageAPIKeyForm .apiField label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.manageAPIKeyForm .actionButtons .btn {
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.manageAPIKeyForm .actionButtons .btn.btn-primary {
+  color: #fff;
+  background-color: #5dbb5a;
+  border-color: #5dbb5a;
+}
+
+.manageAPIKeyForm .actionButtons .btn.btn-primary:hover,
+.manageAPIKeyForm .actionButtons .btn.btn-primary:focus {
+  color: #fff;
+  background-color: #53a051;
+  border-color: #53a051;
+}
+
+.manageAPIKeyForm .actionButtons .btn.btn-delete {
+  color: #5f6b7a;
+  background-color: #eceff3;
+  border: 1px solid #b5bfcb;
+}
+
+.manageAPIKeyForm .actionButtons .btn.btn-delete:hover,
+.manageAPIKeyForm .actionButtons .btn.btn-delete:focus {
+  color: #39424e;
+  background-color: #e2e7ee;
+  border-color: #a9b4c2;
+}
+
+.manageAPIKeyForm .actionButtons .btn.nopointer,
+.manageAPIKeyForm .actionButtons .btn.nopointer:hover,
+.manageAPIKeyForm .actionButtons .btn.nopointer:focus {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.manageAPIKeyForm .status {
+    padding: 20px 20px 0;
+    text-align: center;
+}
+
+.manageAPIKeyForm .status.status-success {
+  color: #53a051;
+}
+
+.manageAPIKeyForm .status.status-error {
+  color: #dc4e41;
+}
+
+.manageAPIKeyForm .apiForm {
+    width: 350px;
+    margin-top: 20px;
+}

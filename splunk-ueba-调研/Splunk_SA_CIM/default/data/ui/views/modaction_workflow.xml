@@ -1,0 +1,12 @@
+<dashboard version="1.1" hideEdit="true" script="modaction_workflow.js">
+    <label>Opening Adaptive Response Search</label>
+    <row>
+        <panel>
+            <html>
+                <div id="modaction-workflow-status" role="status" aria-live="polite">
+                    Opening the workflow search…
+                </div>
+            </html>
+        </panel>
+    </row>
+</dashboard>

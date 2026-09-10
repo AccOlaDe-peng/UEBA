@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0.0",
+  "info": {
+    "title": "Splunk Add-on for Zeek aka Bro",
+    "id": {
+      "group": null,
+      "name": "Splunk_TA_bro",
+      "version": "4.0.0"
+    },
+    "author": [
+      {
+        "name": "Splunk, Inc.",
+        "email": "support@splunk.com",
+        "company": "Splunk, Inc."
+      }
+    ],
+    "releaseDate": null,
+    "description": "Splunk Add-on for Zeek aka Bro",
+    "classification": {
+      "intendedAudience": "IT Professionals",
+      "categories": ["Security, Fraud & Compliance"],
+      "developmentStatus": "Production/Stable"
+    },
+    "commonInformationModels": {
+      "Authentication": ">=3.0.0,<=4.12.0",
+      "Account": ">=3.0.0,<=4.12.0",
+      "Change": ">=3.0.0,<=4.12.0",
+      "Inventory": ">=3.0.0,<=4.12.0",
+      "Storage": ">=3.0.0,<=4.12.0",
+      "User": ">=3.0.0,<=4.12.0"
+    },
+    "license": {
+      "name": "Splunk Software License Agreement",
+      "text": "license-eula.txt",
+      "uri": "http://www.splunk.com/en_us/legal/splunk-software-license-agreement.html"
+    },
+    "privacyPolicy": {
+      "name": null,
+      "text": null,
+      "uri": null
+    },
+    "releaseNotes": {
+      "name": "README",
+      "text": "README.txt",
+      "uri": "http://docs.splunk.com/Documentation/AddOns/released/BroIDS/Releasenotes"
+    }
+  },
+  "dependencies": null,
+  "tasks": null,
+  "inputGroups": null,
+  "incompatibleApps": null,
+  "platformRequirements": {
+    "splunk": {
+      "Enterprise": ">=6.6.0,<=7.2.0"
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Splunk 数据流水线",
+    "locale": "zh-CN",
+    "output": "splunk-ueba-调研/diagrams/splunk-pipeline.dataflow.html",
+    "viewBox": [1080, 640],
+    "quality_profile": "showcase",
+    "legend": {
+      "mode": "auto"
+    }
+  },
+  "stages": [
+    { "label": "数据源" },
+    { "label": "转发层" },
+    { "label": "索引层" },
+    { "label": "搜索层" },
+    { "label": "消费" }
+  ],
+  "nodes": [
+    { "id": "servers", "type": "backend", "label": "服务器 / 终端", "sublabel": "Universal Forwarder", "stage": 0, "row": 0, "tag": "轻量 agent" },
+    { "id": "devices", "type": "external", "label": "网络与安全设备", "sublabel": "防火墙 / EDR / 应用", "stage": 0, "row": 2, "tag": "syslog · HEC" },
+    { "id": "hf", "type": "messagebus", "label": "Heavy Forwarder", "sublabel": "解析 · 过滤 · 路由", "stage": 1, "row": 1, "tag": "可选" },
+    { "id": "indexers", "type": "database", "label": "Indexer 集群", "sublabel": "bucket 分层存储", "stage": 2, "row": 1, "tag": "索引+压缩" },
+    { "id": "smartstore", "type": "cloud", "label": "对象存储", "sublabel": "SmartStore 冷数据", "stage": 2, "row": 3, "yOffset": 20, "tag": "S3" },
+    { "id": "sh", "type": "backend", "label": "Search Head", "sublabel": "SPL 分发与归并", "stage": 3, "row": 1, "tag": "搜索入口" },
+    { "id": "dashboards", "type": "frontend", "label": "仪表盘 / 报表", "sublabel": "调查与可视化", "stage": 4, "row": 0, "tag": "SPL" },
+    { "id": "detection", "type": "security", "label": "告警与检测", "sublabel": "ES · RBA · 告警", "stage": 4, "row": 2, "tag": "风险评分" }
+  ],
+  "flows": [
+    { "id": "servers-to-hf", "from": "servers", "to": "hf", "label": "原始事件", "classification": "转发" },
+    { "id": "devices-to-hf", "from": "devices", "to": "hf", "label": "syslog / HEC", "classification": "集中接收" },
+    { "id": "hf-to-indexers", "from": "hf", "to": "indexers", "label": "解析后事件", "classification": "load balance" },
+    { "id": "indexers-to-smartstore", "from": "indexers", "to": "smartstore", "label": "冷数据外置", "classification": "降本", "variant": "dashed", "labelDy": 24 },
+    { "id": "indexers-to-sh", "from": "indexers", "to": "sh", "label": "并行检索结果", "classification": "分布式查询", "variant": "emphasis" },
+    { "id": "sh-to-dashboards", "from": "sh", "to": "dashboards", "label": "SPL 查询" },
+    { "id": "sh-to-detection", "from": "sh", "to": "detection", "label": "定时搜索", "classification": "告警", "variant": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "主数据路径",
+      "items": [
+        "数据从左到右流经:数据源 → 转发 → 索引 → 搜索 → 消费",
+        "Universal Forwarder 只转发不解析;Heavy Forwarder 负责解析、过滤与路由",
+        "Indexer 写入时建索引并压缩,按时间分 bucket 存储"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Schema on read",
+      "items": [
+        "写入时不强制字段结构,搜索时才按需抽取字段",
+        "每个事件必带 _time,查询按时间范围裁剪,如需全量统计需汇总索引",
+        "Search Head 把 SPL 分发到各 Indexer 并行执行后归并"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "成本与消费",
+      "items": [
+        "License 按每日索引数据量(GB/天)计费,搜索与告警不限量",
+        "SmartStore 把冷数据外置到对象存储,降低留存成本",
+        "消费侧分两条路:交互式调查(仪表盘)与自动化检测(ES/RBA)"
+      ]
+    }
+  ]
+}
