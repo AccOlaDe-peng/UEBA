@@ -1,11 +1,6 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Splunk 实现机制与 UEBA 预研报告</title><style>
-:root{color-scheme:light;--ink:#20242a;--muted:#626b76;--rule:#d9dee5;--accent:#204c75}
-*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:#fff;color:var(--ink);font:16px/1.85 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.citation{font-size:.8em;vertical-align:super;margin:0 2px}.citation::before{content:"["}.citation::after{content:"]"}nav{position:fixed;left:0;top:0;bottom:0;width:270px;padding:34px 22px;border-right:1px solid var(--rule);overflow:auto;background:#f7f8fa;font-size:14px}nav strong{font-size:18px}nav ol{padding-left:21px}nav li{margin:16px 0}nav p{color:var(--muted);font-size:13px}main{max-width:1190px;margin-left:270px;padding:42px 64px 110px}section{margin-bottom:90px;scroll-margin-top:24px}section+section{border-top:2px solid var(--rule);padding-top:48px}h1{font-size:30px;line-height:1.4;margin:0 0 26px;letter-spacing:.02em}h2{font-size:23px;line-height:1.5;margin:42px 0 16px}h3{font-size:18px;line-height:1.6;margin:30px 0 14px}p{margin:14px 0}li{margin:6px 0}.table-wrap{overflow-x:auto;margin:22px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7}th,td{border:1px solid var(--rule);padding:11px 13px;text-align:left;vertical-align:top;min-width:110px}th{background:#eef1f4;font-weight:600}tr:nth-child(even) td{background:#fafbfc}pre{background:#f5f6f8;border:1px solid var(--rule);padding:18px;overflow-x:auto;font-size:13px;line-height:1.65}code{font-family:ui-monospace,SFMono-Regular,Menlo,"PingFang SC",monospace;overflow-wrap:anywhere}p code,td code{background:#f1f3f5;padding:1px 4px}button{font:inherit;border:1px solid #b9c4ce;background:white;padding:6px 14px;cursor:pointer;color:var(--ink)}#part-05 li{overflow-wrap:anywhere}footer{border-top:1px solid var(--rule);padding-top:24px;font-size:13px;color:var(--muted)}
-@media(max-width:1050px){nav{position:static;width:auto;border-right:0;border-bottom:1px solid var(--rule);padding:20px 26px}nav ol{columns:2}nav li{margin:8px 0;break-inside:avoid}main{margin:0;padding:32px 26px;max-width:none}h1{font-size:26px}}
-@media print{@page{size:A4;margin:18mm 15mm}body{font-size:10pt;line-height:1.65}nav{display:none}main{margin:0;padding:0;max-width:none}h1{font-size:23pt}h2{font-size:16pt}h3{font-size:12pt}section{margin:0;break-before:page}section:first-child{break-before:auto}section+section{border:0;padding:0}h1,h2,h3{break-after:avoid}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:8pt;break-inside:avoid}.table-wrap{overflow:visible}table{font-size:8.5pt}th,td{padding:5px 7px;min-width:0}tr{break-inside:avoid}thead{display:table-header-group}a{color:inherit}button{display:none}}
-</style></head><body><nav><strong>Splunk 机制预研报告</strong><ol><li><a href="#part-00">Splunk 实现机制与 UEBA 预研报告</a></li><li><a href="#part-01">Splunk 实现机制：领导主报告</a></li><li><a href="#part-02">Splunk 数据平台与工程机制</a></li><li><a href="#part-03">Splunk 行为检测与风险机制</a></li><li><a href="#part-04">Splunk 机制到自研 UEBA 的映射与验证边界</a></li><li><a href="#part-05">证据索引与既有资料勘误</a></li><li><a href="#part-06">Windows AD 与 Zeek 日志采集机制对比</a></li></ol><p>核验截止：2026-09-10<br>事实、解释与示例分开呈现<br>可离线阅读，无外部脚本依赖</p><button onclick="window.print()">打印 / 保存 PDF</button></nav><main><section id="part-00"><h1 id="part-00-splunk-ueba">Splunk 实现机制与 UEBA 预研报告</h1>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Splunk 实现机制与 UEBA 预研报告</title><style>:root{color-scheme:light;--ink:#20242a;--muted:#626b76;--rule:#d9dee5;--accent:#204c75}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:#fff;color:var(--ink);font:16px/1.85 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}nav{position:fixed;left:0;top:0;bottom:0;width:280px;padding:34px 22px;border-right:1px solid var(--rule);overflow:auto;background:#f7f8fa;font-size:14px}nav strong{font-size:18px}nav ol{padding-left:21px}nav li{margin:14px 0}nav p{color:var(--muted);font-size:13px}main{max-width:1190px;margin-left:280px;padding:42px 64px 110px}section{margin-bottom:90px;scroll-margin-top:24px}section+section{border-top:2px solid var(--rule);padding-top:48px}h1{font-size:30px;line-height:1.4;margin:0 0 26px;letter-spacing:.02em}h2{font-size:23px;line-height:1.5;margin:42px 0 16px}h3{font-size:18px;line-height:1.6;margin:30px 0 14px}p{margin:14px 0}li{margin:6px 0}.table-wrap{overflow-x:auto;margin:22px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7}th,td{border:1px solid var(--rule);padding:11px 13px;text-align:left;vertical-align:top;min-width:110px}th{background:#eef1f4;font-weight:600}tr:nth-child(even) td{background:#fafbfc}pre{background:#f5f6f8;border:1px solid var(--rule);padding:18px;overflow-x:auto;font-size:13px;line-height:1.65}code{font-family:ui-monospace,SFMono-Regular,Menlo,"PingFang SC",monospace;overflow-wrap:anywhere}p code,td code{background:#f1f3f5;padding:1px 4px}button{font:inherit;border:1px solid #b9c4ce;background:white;padding:6px 14px;cursor:pointer;color:var(--ink)}footer{border-top:1px solid var(--rule);padding-top:24px;font-size:13px;color:var(--muted)}@media(max-width:1050px){nav{position:static;width:auto;border-right:0;border-bottom:1px solid var(--rule);padding:20px 26px}nav ol{columns:2}nav li{margin:8px 0;break-inside:avoid}main{margin:0;padding:32px 26px;max-width:none}h1{font-size:26px}}@media print{@page{size:A4;margin:18mm 15mm}body{font-size:10pt;line-height:1.65}nav{display:none}main{margin:0;padding:0;max-width:none}h1{font-size:23pt}h2{font-size:16pt}h3{font-size:12pt}section{margin:0;break-before:page}section:first-child{break-before:auto}section+section{border:0;padding:0}h1,h2,h3{break-after:avoid}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:8pt;break-inside:avoid}.table-wrap{overflow:visible}table{font-size:8.5pt}th,td{padding:5px 7px;min-width:0}tr{break-inside:avoid}thead{display:table-header-group}a{color:inherit}button{display:none}}</style></head><body><nav><strong>Splunk 机制预研报告</strong><ol><li><a href="#part-00">Splunk 实现机制与 UEBA 预研报告</a></li><li><a href="#part-01">Splunk 实现机制</a></li><li><a href="#part-02">Splunk 数据平台与工程机制</a></li><li><a href="#part-03">Splunk 行为检测与风险机制</a></li><li><a href="#part-04">Splunk 机制到自研 UEBA 的映射与验证边界</a></li><li><a href="#part-05">证据索引与既有资料勘误</a></li><li><a href="#part-06">Windows AD 与 Zeek 日志采集机制对比</a></li><li><a href="#part-07">Splunk Indexer 开源替代方案预研</a></li><li><a href="#part-08">数据进入与 UEBA 特征计算机制</a></li><li><a href="#part-09">Splunk 数据进入流程总结</a></li><li><a href="#part-10">Splunk CIM、Zeek 映射与 Dataset 参考</a></li></ol><p>核验截止：2026-09-10<br>事实、解释与示例分开呈现<br>可离线阅读，无外部脚本依赖</p><button onclick="window.print()">打印 / 保存 PDF</button></nav><main><section id="part-00"><h1>Splunk 实现机制与 UEBA 预研报告</h1>
 <p>本报告用于理解 Splunk 如何从原始日志形成可调查的安全证据，为自研 UEBA 提供机制参考。它不指定最终技术栈、产品路线或采购方案。</p>
-<h2 id="part-00-_1">阅读安排</h2>
+<h2>阅读安排</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -14,8 +9,7 @@
 <th>阅读对象</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><a href="#part-01">01-领导主报告</a></td>
 <td>Splunk 的能力如何组成，为什么有效，哪些能力值得借鉴，哪些不能照搬？</td>
 <td>领导、产品负责人</td>
@@ -45,19 +39,39 @@
 <td>UF 如何采集 AD 安全日志、WEF 和目录对象数据，与 Zeek 文件采集有什么不同？</td>
 <td>架构、运维、数据工程</td>
 </tr>
-</tbody>
-</table></div>
+<tr>
+<td><a href="#part-07">07-Splunk Indexer 开源替代方案</a></td>
+<td>Splunk Indexer 能否由单一产品或开源组合替代，UEBA 场景应怎样选型和验证？</td>
+<td>领导、架构、研发、数据工程</td>
+</tr>
+<tr>
+<td><a href="#part-08">08-数据进入与 UEBA 特征计算机制</a></td>
+<td>一条日志怎样被可靠采集、标准化和双写，UEBA 特征在何时、由谁、按什么口径计算？</td>
+<td>架构、数据工程、算法、检测研发</td>
+</tr>
+<tr>
+<td><a href="#part-09">09-Splunk 数据进入流程总结</a></td>
+<td>Splunk 如何从源端采集日志，经转发、解析和索引变成可搜索、可供 CIM 与 UEBA 使用的事件？</td>
+<td>领导、架构、运维、数据工程</td>
+</tr>
+<tr>
+<td><a href="#part-10">10-CIM、Zeek 映射与 Dataset 参考</a></td>
+<td>CIM 包含哪些模型，Zeek sourcetype 怎样命中模型，Dataset 如何继承、查询和验证？</td>
+<td>架构、数据工程、检测研发、安全运营</td>
+</tr>
+</tbody></table></div>
 <p>另提供同目录的 <code>Splunk机制预研报告-合订本.html</code>，适合连续阅读、检索及浏览器打印。</p>
-<h2 id="part-00-_2">事实口径</h2>
+<h2>事实口径</h2>
 <p>核验截止日为 2026 年 9 月 10 日。平台基础机制引用指定版本文档；ES 行为与评分以 8.5 为主，涉及本地检测审计引用 8.6，知识对象权限引用 8.7；独立 UBA 引用 5.4.x。这些版本是证据适用范围，不表示它们组成一套经过验证的兼容部署。</p>
-<p>正文使用三种标记：<strong>【事实】</strong>表示官方明确披露或本地配置可直接确认；<strong>【解释】</strong>表示对公开机制的工程分析；<strong>【示例】</strong>表示为帮助理解而构造的流程、公式或数据，不代表 Splunk 内部实现。</p>
+<p>正文使用三种标记：**【事实】<strong>表示官方明确披露或本地配置可直接确认；</strong>【解释】<strong>表示对公开机制的工程分析；</strong>【示例】**表示为帮助理解而构造的流程、公式或数据，不代表 Splunk 内部实现。</p>
 <p>本次未运行 Splunk Enterprise、ES 或独立 UBA 实例，未取得 UEBA Content App 的内部检测包。已检查本地 Corelight Add-on for Zeek 1.0.11 和 CIM 8.7.0 的配置文件。所有检测样例均不能视为在 Splunk 上执行验证的生产代码；官方未公开的模型权重、训练细节、完整 SPL 和内部状态格式不做补写。</p>
-<p>原目录各预研笔记保留作为历史材料。最终汇报以本报告的版本标注、证据边界和勘误为准。</p></section><section id="part-01"><h1 id="part-01-splunk">Splunk 实现机制：领导主报告</h1>
-<h2 id="part-01-1-splunk">1. 首先理解 Splunk 在解决什么问题</h2>
+<p>原目录各预研笔记保留作为历史材料。最终汇报以本报告的版本标注、证据边界和勘误为准。</p>
+</section><section id="part-01"><h1>Splunk 实现机制</h1>
+<h2>1. 首先理解 Splunk 在解决什么问题</h2>
 <p>Splunk 的主要价值是把分散的机器数据转变成可查询、可关联、可持续运行的分析结果。放到 UEBA 场景，它需要依次回答：发生了什么、涉及谁、平时怎样、这次有什么不同、多个异常是否构成威胁、为什么应优先调查。</p>
 <p>从公开架构和本地配置可以看出，这些能力由多个层次协同完成：底层保留和检索事件，中间统一数据语义与实体身份，上层产生行为信号、聚合风险并展示证据。某一层出现问题，后面的模型也可能产生看似精确但归因错误的结果。</p>
-<p><strong>对自研 UEBA 最有价值的认识，是将“数据事实、行为异常、安全判断、调查优先级”分开表达。</strong>登录失败是事实；登录失败次数高于个人历史是异常；失败后成功并新增管理员权限是需要解释的行为链；风险分只是帮助安排调查顺序。这四件事不能用一个分数代替。</p>
-<h2 id="part-01-2-splunk">2. 产品边界：不能把 Splunk 当成一个统一算法</h2>
+<p>**对自研 UEBA 最有价值的认识，是将“数据事实、行为异常、安全判断、调查优先级”分开表达。**登录失败是事实；登录失败次数高于个人历史是异常；失败后成功并新增管理员权限是需要解释的行为链；风险分只是帮助安排调查顺序。这四件事不能用一个分数代替。</p>
+<h2>2. 产品边界：不能把 Splunk 当成一个统一算法</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -66,8 +80,7 @@
 <th>与自研 UEBA 的关系</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>Splunk Enterprise / Splunk Cloud Platform</td>
 <td>接入、索引、搜索和知识对象运行平台；部署和管理责任不同</td>
 <td>对应数据与计算基础设施</td>
@@ -102,12 +115,11 @@
 <td>用 <code>fit</code>、<code>apply</code> 等命令组织训练和推理</td>
 <td>是模型开发能力，不等于内置 UEBA 算法</td>
 </tr>
-</tbody>
-</table></div>
-<p>平台组件分工、ES UEBA 概述、独立 UBA 架构以及 ML-SPL 分别有独立文档，不能因同属 Splunk 就推断使用相同实现。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">1</a><a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/user-and-entity-behavior-analytics-ueba-overview-in-splunk-enterprise-security">8</a><a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/plan-and-scale/5.4.0/plan-and-scale-your-splunk-uba-deployment/splunk-uba-deployment-architecture">16</a><a class="citation" href="https://help.splunk.com/en/splunk-cloud-platform/apply-machine-learning/use-ai-toolkit/5.6.0/mltk-commands-macros-and-visualizations/about-the-fit-and-apply-commands">23</a></p>
-<p>【事实】Splunk 已宣布独立 UBA 于 2025-12-12 停售，2027-01-31 结束支持；公告将 ES Premier 内的新 UEBA 能力作为资源投入方向。这说明产品交付发生变化，不能证明旧 UBA 的所有模型、基础设施和评分算法已被完整迁移。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/release-notes/5.4.5/additional-resources/splunk-announces-end-of-sale-and-end-of-life-for-standalone-splunk-user-behavior-analytics-software">7</a></p>
+</tbody></table></div>
+<p>平台组件分工、ES UEBA 概述、独立 UBA 架构以及 ML-SPL 分别有独立文档，不能因同属 Splunk 就推断使用相同实现。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">1</a><a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/user-and-entity-behavior-analytics-ueba-overview-in-splunk-enterprise-security">8</a><a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/plan-and-scale/5.4.0/plan-and-scale-your-splunk-uba-deployment/splunk-uba-deployment-architecture">16</a><a href="https://help.splunk.com/en/splunk-cloud-platform/apply-machine-learning/use-ai-toolkit/5.6.0/mltk-commands-macros-and-visualizations/about-the-fit-and-apply-commands">23</a></p>
+<p>【事实】Splunk 已宣布独立 UBA 于 2025-12-12 停售，2027-01-31 结束支持；公告将 ES Premier 内的新 UEBA 能力作为资源投入方向。这说明产品交付发生变化，不能证明旧 UBA 的所有模型、基础设施和评分算法已被完整迁移。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/release-notes/5.4.5/additional-resources/splunk-announces-end-of-sale-and-end-of-life-for-standalone-splunk-user-behavior-analytics-software">7</a></p>
 <p>【解释】我们可以分别研究“分析能力集成到 SIEM”和“专门的行为分析引擎”两种组织方式。厂商的商业演进不能直接决定我们的系统边界。</p>
-<h2 id="part-01-3">3. 一条完整的处理链路</h2>
+<h2>3. 一条完整的处理链路</h2>
 <pre><code class="language-text">认证、终端、网络、云审计、组织和资产信息
                   │
                   ▼
@@ -134,25 +146,25 @@
                     例外管理、检测调优、质量与效果评估
 </code></pre>
 <p>这是便于理解的概念总图，并非把独立 UBA 和 ES 内置 UEBA 合并后的物理架构。独立 UBA 使用自己的 anomaly → threat 路径，ES 使用检测结果及风险分析路径；两者可以集成，但不能把 anomaly、risk event、finding 当成同一对象。</p>
-<h3 id="part-01-31">3.1 数据进入：把记录变成可以分析的事件</h3>
-<p>【事实】Forwarder 负责采集和转发，Indexer 负责索引，Search Head 发起搜索并汇集结果。事件切分、时间戳解释等发生在解析阶段；字段别名、查表和不少字段提取可发生在搜索阶段。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">1</a><a class="citation" href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">2</a></p>
+<h3>3.1 数据进入：把记录变成可以分析的事件</h3>
+<p>【事实】Forwarder 负责采集和转发，Indexer 负责索引，Search Head 发起搜索并汇集结果。事件切分、时间戳解释等发生在解析阶段；字段别名、查表和不少字段提取可发生在搜索阶段。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">1</a><a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">2</a></p>
 <p>【解释】这种安排允许保留原始数据，在后续理解变化时重新提取字段。但时间戳、事件边界或入口过滤一旦处理错误，后面仅修改查询未必能修复。因此“先把日志存进来”还不是“数据可供 UEBA 使用”。</p>
-<h3 id="part-01-32">3.2 统一语义：让不同厂商的数据能进入同一条检测</h3>
+<h3>3.2 统一语义：让不同厂商的数据能进入同一条检测</h3>
 <p>本地 Zeek 插件直接展示了这个过程：源地址转换成 <code>src</code>，目的地址转换成 <code>dest</code>，连接事件通过 eventtype 和 tag 进入 Network_Traffic 模型。CIM 是字段与事件类别的约定，插件负责落实映射。<a href="../Splunk_TA_zeek/default/props.conf">L01</a><a href="../Splunk_TA_zeek/default/eventtypes.conf">L02</a><a href="../Splunk_TA_zeek/default/tags.conf">L03</a><a href="../Splunk_SA_CIM/default/data/models/Network_Traffic.json">L04</a></p>
 <p>【解释】统一字段名只是第一步。例如 <code>bytes_out</code> 表示从哪个主体发出、是否包含 IP 头、是否有重复观测，都会影响“异常外发量”。字段名相同但含义不同，比缺字段更难发现。</p>
-<h3 id="part-01-33">3.3 识别实体：将一次行为归到正确的人和设备</h3>
-<p>【事实】独立 UBA 把账号关联到人员，解析 IP、主机名与用户的关系，并维护这些关系随时间的变化。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a></p>
+<h3>3.3 识别实体：将一次行为归到正确的人和设备</h3>
+<p>【事实】独立 UBA 把账号关联到人员，解析 IP、主机名与用户的关系，并维护这些关系随时间的变化。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a></p>
 <p>【解释】“10.0.0.8 是张三”不能成为永久关系。DHCP、VPN、NAT、共享终端和服务账号会改变其含义。网络 UEBA 至少要区分人员、账号、设备、地址和会话；无法可靠识别人员时，可以先产生设备证据，而不是强行归给某个人。</p>
-<h3 id="part-01-34">3.4 比较基线：将“很多”转成“相对谁不正常”</h3>
-<p>【事实】ES 的本地 UEBA 知识对象包括摘要、合并、特征和评分搜索，KV Store 跟踪特征与关联实体。审计界面公开了稀有特征和个体基线两类观察方式。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a><a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/auditing-ueba-with-dashboards-in-splunk-enterprise-security">10</a></p>
+<h3>3.4 比较基线：将“很多”转成“相对谁不正常”</h3>
+<p>【事实】ES 的本地 UEBA 知识对象包括摘要、合并、特征和评分搜索，KV Store 跟踪特征与关联实体。审计界面公开了稀有特征和个体基线两类观察方式。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a><a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/auditing-ueba-with-dashboards-in-splunk-enterprise-security">10</a></p>
 <p>【解释】要判断“外发量大”，需要明确对象、时间窗、字节口径、历史样本和比较群体。研发人员与备份服务器应采用不同参照；同一个人在工作日白天和周末凌晨也可能有不同的正常范围。</p>
-<h3 id="part-01-35">3.5 从弱信号形成调查对象</h3>
-<p>【事实】ES 检测可输出 intermediate finding 或 finding，风险修饰把分数和描述关联到实体；finding-based detection 可以依据累计实体风险分组。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a></p>
+<h3>3.5 从弱信号形成调查对象</h3>
+<p>【事实】ES 检测可输出 intermediate finding 或 finding，风险修饰把分数和描述关联到实体；finding-based detection 可以依据累计实体风险分组。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a></p>
 <p>【解释】单独一次罕见登录可能是出差，一次大量传输可能是备份。若两者发生在同一身份和合理时间范围内，并伴随新增权限或敏感资源访问，就更值得调查。RBA 的作用是让弱证据积累和关联，但累加本身不能证明因果关系。</p>
-<h3 id="part-01-36">3.6 让分析师看得懂、查得回</h3>
-<p>【事实】独立 UBA 的威胁详情关联异常和时间线；ES 的排除机制会影响风险数据模型、实体评分及相关检测。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/lateral-movement-model">20</a><a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/finding-exclusions-in-splunk-enterprise-security">15</a></p>
+<h3>3.6 让分析师看得懂、查得回</h3>
+<p>【事实】独立 UBA 的威胁详情关联异常和时间线；ES 的排除机制会影响风险数据模型、实体评分及相关检测。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/lateral-movement-model">20</a><a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/finding-exclusions-in-splunk-enterprise-security">15</a></p>
 <p>【解释】生产价值来自“分数背后的证据可解释”。应能看到原始事件、归因理由、当前值与基线、触发规则、排除状态和版本。关闭案件与删除证据是不同操作；误报反馈也不是自动获得可信训练标签。</p>
-<h2 id="part-01-4">4. 防泄密案例：同一批数据如何变成判断</h2>
+<h2>4. 防泄密案例：同一批数据如何变成判断</h2>
 <p>下面是说明机制的虚构案例，所有分值、阈值与时间窗均为示例，不是 Splunk 内置规则。</p>
 <div class="table-wrap"><table>
 <thead>
@@ -163,8 +175,7 @@
 <th>还不能得出的结论</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>09:00</td>
 <td>VPN 审计显示账号 A 从新设备登录；身份源将 A 关联到员工甲</td>
 <td>发生了新设备登录</td>
@@ -200,10 +211,9 @@
 <td>根据补充证据确认、排除或继续调查</td>
 <td>缺乏正文时恢复加密内容</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>这个案例说明：网络异常可以提出问题，身份信息让问题有归属，终端和文件审计补全行为，业务上下文帮助解释。数据源不足时应降低结论强度，而不是用更高分数补齐事实。</p>
-<h2 id="part-01-5">5. 风险体系中必须区分的三个量</h2>
+<h2>5. 风险体系中必须区分的三个量</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -212,8 +222,7 @@
 <th>重要边界</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>单条风险贡献分</td>
 <td>检测对某个实体贡献多少风险</td>
 <td>不是统一的恶意概率</td>
@@ -228,11 +237,10 @@
 <td>ES 对近期发现形成的 0–100 实体指标</td>
 <td>不应与原始分直接比较，也不是百分比概率</td>
 </tr>
-</tbody>
-</table></div>
-<p>【事实】ES 8.5 ERS 使用过去 7 天的发现，默认每 20 分钟计算。公开输入包括总分、最高分、高分发现数量、发现总数和按检测取最高分后求和，组合为加权结果；该页面没有给出具体权重和完整归一化计算。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/entity-risk-scoring-in-splunk-enterprise-security">12</a></p>
+</tbody></table></div>
+<p>【事实】ES 8.5 ERS 使用过去 7 天的发现，默认每 20 分钟计算。公开输入包括总分、最高分、高分发现数量、发现总数和按检测取最高分后求和，组合为加权结果；该页面没有给出具体权重和完整归一化计算。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/entity-risk-scoring-in-splunk-enterprise-security">12</a></p>
 <p>【解释】“按检测取最大值”使一个输入更关注检测多样性，但另外几个输入仍会被高频误报影响。因此不能声称 ERS 天然防刷分，更不能把任意五项加权平均包装成 Splunk 的原始算法。</p>
-<h2 id="part-01-6">6. 哪些机制值得借鉴，代价是什么</h2>
+<h2>6. 哪些机制值得借鉴，代价是什么</h2>
 <p>以下是对已公开机制的设计分析，不是路线推荐。</p>
 <div class="table-wrap"><table>
 <thead>
@@ -242,8 +250,7 @@
 <th>必须付出的工程代价</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>统一事件语义</td>
 <td>一套检测覆盖多个日志来源</td>
 <td>映射版本、质量校验、语义一致性测试</td>
@@ -278,10 +285,9 @@
 <td>降噪同时发现数据/计算故障</td>
 <td>例外到期、覆盖率监控、旁路检查</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>Splunk 将这些能力做成可配置内容，意味着检测产品不仅包含算法，还包含内容发布、权限、知识对象、调度、数据契约、诊断及运营流程。</p>
-<h2 id="part-01-7">7. 给领导保留的判断空间</h2>
+<h2>7. 给领导保留的判断空间</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -290,8 +296,7 @@
 <th>作出判断前需要的证据</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>做通用安全平台还是聚焦防泄密</td>
 <td>通用查询与内容平台／限定场景产品</td>
 <td>场景范围、分析师使用方式、接入需求</td>
@@ -316,11 +321,11 @@
 <td>仅网络／网络加身份／加入终端和文件审计</td>
 <td>每个防泄密结论所需的可观测证据</td>
 </tr>
-</tbody>
-</table></div>
-<p>本报告将机制、代价及验证办法展开到后续分册，不给这些方向做预设排名。领导可以据此决定范围，研发再按已确认的约束形成具体方案。</p></section><section id="part-02"><h1 id="part-02-splunk">Splunk 数据平台与工程机制</h1>
-<h2 id="part-02-1">1. 从组件职责理解物理架构</h2>
-<p>【事实】Splunk 将输入、解析、索引和搜索分配给不同组件。Universal Forwarder 通常轻量采集转发；Heavy Forwarder 可以先解析再转发；Indexer 建立索引并参与搜索；Search Head 派发搜索并汇集结果。结构化输入等场景存在例外，不能绝对地说 Universal Forwarder 不解析任何数据。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">1</a></p>
+</tbody></table></div>
+<p>本报告将机制、代价及验证办法展开到后续分册，不给这些方向做预设排名。领导可以据此决定范围，研发再按已确认的约束形成具体方案。</p>
+</section><section id="part-02"><h1>Splunk 数据平台与工程机制</h1>
+<h2>1. 从组件职责理解物理架构</h2>
+<p>【事实】Splunk 将输入、解析、索引和搜索分配给不同组件。Universal Forwarder 通常轻量采集转发；Heavy Forwarder 可以先解析再转发；Indexer 建立索引并参与搜索；Search Head 派发搜索并汇集结果。结构化输入等场景存在例外，不能绝对地说 Universal Forwarder 不解析任何数据。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">1</a></p>
 <pre><code class="language-text">日志文件 / Windows 事件 / API / HTTP 输入
                    │
                    ▼
@@ -340,12 +345,12 @@
             SPL / 调度 / 展示
 </code></pre>
 <p>【解释】这张图表达责任边界，不规定节点数。小部署可以合并职责，大部署分离。将查询入口与存储计算分开，可以分别处理交互并发和数据规模；但是集中汇总仍然可能成为瓶颈。</p>
-<h3 id="part-02-11">1.1 管理平面与数据平面</h3>
-<p>Indexer cluster 的管理节点维护集群协调，Search Head Cluster 的 captain 协调集群活动和计划搜索。索引集群解决数据副本问题，搜索头集群解决搜索入口和任务协调问题，二者不能互相替代。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise/administer/manage-indexers-and-indexer-clusters/10.4/how-indexer-clusters-work/search-factor">6</a><a class="citation" href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-search/9.0/overview-of-search-head-clustering/search-head-clustering-architecture">24</a></p>
+<h3>1.1 管理平面与数据平面</h3>
+<p>Indexer cluster 的管理节点维护集群协调，Search Head Cluster 的 captain 协调集群活动和计划搜索。索引集群解决数据副本问题，搜索头集群解决搜索入口和任务协调问题，二者不能互相替代。<a href="https://help.splunk.com/en/splunk-enterprise/administer/manage-indexers-and-indexer-clusters/10.4/how-indexer-clusters-work/search-factor">6</a><a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-search/9.0/overview-of-search-head-clustering/search-head-clustering-architecture">24</a></p>
 <p>【解释】自研时应明确哪些状态属于“原始数据”、哪些属于“控制配置”、哪些属于“运行中任务”。这些状态的恢复方法不同。增加 Kafka 副本并不自动保证模型状态或定时任务不会重复执行。</p>
-<h2 id="part-02-2">2. 接入与解析：哪些处理可以后补</h2>
-<h3 id="part-02-21">2.1 最先确定事件边界和时间</h3>
-<p>【事实】索引前的处理包括事件切分、时间戳识别、默认元数据与特定索引时字段提取。搜索时可继续进行字段提取、别名、计算字段、查表、事件类型匹配和标签处理。<a class="citation" href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">2</a></p>
+<h2>2. 接入与解析：哪些处理可以后补</h2>
+<h3>2.1 最先确定事件边界和时间</h3>
+<p>【事实】索引前的处理包括事件切分、时间戳识别、默认元数据与特定索引时字段提取。搜索时可继续进行字段提取、别名、计算字段、查表、事件类型匹配和标签处理。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">2</a></p>
 <p>【解释】假设一个 Java 堆栈应是一条事件，切成十条后会直接改变频次特征。假设日志是 UTC，解析成北京时间会使“夜间登录”发生系统性偏移。去掉敏感字段或入口丢弃事件之后，后续查询无法凭空还原它们。</p>
 <div class="table-wrap"><table>
 <thead>
@@ -355,8 +360,7 @@
 <th>常见故障</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>事件时间 <code>_time</code></td>
 <td>行为顺序、时间窗、历史基线</td>
 <td>时区错误、设备时钟漂移</td>
@@ -386,14 +390,13 @@
 <td>调查和重算依据</td>
 <td>不可检索、保留期过短</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>这里的故障和 UEBA 用途属于工程分析。元数据的存在不自动保证对应业务含义正确。</p>
-<h3 id="part-02-22">2.2 接入成功与业务完整是两套验收</h3>
+<h3>2.2 接入成功与业务完整是两套验收</h3>
 <p>【解释】一条记录被接收，只能证明传输链路至少处理了这条记录。还必须对比源端产出量、事件类型分布、解析失败、迟到分布和关键字段覆盖率。身份审计少采集一个事件类型，可能恰好让“权限变更”整类检测失效。</p>
 <p>HTTP/API 输入、文件转发和消息重试机制的确认语义并不相同。本次未逐协议验证端到端 exactly-once，因此不作“Splunk 保证全链路不丢不重”的结论。自研的信号层应另行定义幂等键、补采和重放策略。</p>
-<h2 id="part-02-3">3. 索引存储：为什么不必每次扫描全部原文</h2>
-<p>【事实】Splunk 将压缩原始数据、指向原始数据的 tsidx 文件和元数据组织成 bucket；bucket 具有时间范围。常规存储存在 hot、warm、cold 等生命周期，SmartStore 的远端存储场景不应简单套用同一冷热目录理解。<a class="citation" href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.1/manage-index-storage/how-the-indexer-stores-indexes">3</a></p>
+<h2>3. 索引存储：为什么不必每次扫描全部原文</h2>
+<p>【事实】Splunk 将压缩原始数据、指向原始数据的 tsidx 文件和元数据组织成 bucket；bucket 具有时间范围。常规存储存在 hot、warm、cold 等生命周期，SmartStore 的远端存储场景不应简单套用同一冷热目录理解。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.1/manage-index-storage/how-the-indexer-stores-indexes">3</a></p>
 <p>【解释】可以把一次查询理解为：先按时间和索引范围排除不相关 bucket，再利用索引定位候选事件，必要时读取原文并执行字段提取，最后计算结果。这是概念执行过程，不是对专有文件格式或每个优化器步骤的复现。</p>
 <div class="table-wrap"><table>
 <thead>
@@ -403,8 +406,7 @@
 <th>与 UEBA 的关系</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>原始事件</td>
 <td>可回溯记录</td>
 <td>说明信号从何而来；支持重新解析</td>
@@ -429,15 +431,14 @@
 <td>检测输出、聚合结果、处理状态</td>
 <td>服务运营而不是替代原始日志</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>不能把 tsidx 直接称为 Elasticsearch 索引或某种通用列式数据库文件，也不能推断其未公开的编码、压缩算法和执行器实现。</p>
-<h3 id="part-02-31">3.1 保留周期为什么属于检测设计</h3>
+<h3>3.1 保留周期为什么属于检测设计</h3>
 <p>【解释】原始日志保留 7 天，而模型比较 30 天历史时，必须有足够的历史派生状态；但有状态不等于能还原原始证据。若案件调查期长于日志保留期，后来可能只能看到“当时系统算出了什么”，看不到“事件究竟记录了什么”。</p>
 <p>容量也不能仅按原始日志估计。摘要、副本、特征、模型、风险证据、检索缓存和回填临时空间都占用资源。每类数据都需要独立的保留、重建和恢复策略。</p>
-<h2 id="part-02-4-schema-on-read-cim">4. Schema-on-read 与 CIM：灵活性来自哪里</h2>
-<p>Schema-on-read 可理解为在读取和分析时解释部分字段。它不意味着完全没有 schema，也不意味着所有处理都发生在搜索时。Splunk 的索引时结构化提取与搜索时知识对象共同构成数据解释机制。<a class="citation" href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">2</a><a href="../Splunk_TA_zeek/default/props.conf">L01</a></p>
-<h3 id="part-02-41">4.1 一条日志经过哪些配置</h3>
+<h2>4. Schema-on-read 与 CIM：灵活性来自哪里</h2>
+<p>Schema-on-read 可理解为在读取和分析时解释部分字段。它不意味着完全没有 schema，也不意味着所有处理都发生在搜索时。Splunk 的索引时结构化提取与搜索时知识对象共同构成数据解释机制。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">2</a><a href="../Splunk_TA_zeek/default/props.conf">L01</a></p>
+<h3>4.1 一条日志经过哪些配置</h3>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -446,8 +447,7 @@
 <th>可核对的配置位置</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>输入定义</td>
 <td>指定采集对象及入口元数据</td>
 <td><code>inputs.conf</code>，具体插件和部署决定</td>
@@ -482,10 +482,9 @@
 <td>复用表达式、组织检测与定时计算</td>
 <td><code>macros.conf</code>、<code>savedsearches.conf</code></td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>【解释】配置需要部署到执行对应阶段的组件。索引前规则只装在 Search Head，不会使远端 Indexer 对过去事件重新切分；搜索字段配置没有进入有效作用域，也不会因为原文里出现了相似字符串就自动生效。</p>
-<h3 id="part-02-42-zeek">4.2 本地 Zeek 插件中的实际证据</h3>
+<h3>4.2 本地 Zeek 插件中的实际证据</h3>
 <p>本地 <code>Splunk_TA_zeek/default/app.conf</code> 声明的是 <strong>Corelight Add-on for Zeek 1.0.11</strong>。不能将其与相邻 <code>Splunk_TA_bro</code> 目录或不同版本压缩包视为同一插件。<a href="../Splunk_TA_zeek/default/app.conf">L05</a></p>
 <p>以下片段摘自本地 <code>props.conf</code>，保留了实际字段选择：<a href="../Splunk_TA_zeek/default/props.conf">L01</a></p>
 <pre><code class="language-ini">[zeek]
@@ -499,7 +498,7 @@ FIELDALIAS-id_resp_h = id_resp_h ASNEW dest id_resp_h ASNEW id.resp_h id_resp_h 
 FIELDALIAS-orig_bytes = orig_ip_bytes ASNEW bytes_out
 FIELDALIAS-resp_bytes = resp_ip_bytes ASNEW bytes_in
 </code></pre>
-<p>需要看配置右侧的源字段，不能根据 stanza 名 <code>FIELDALIAS-orig_bytes</code> 就以为映射来自 <code>orig_bytes</code>。实际使用 <code>orig_ip_bytes</code>，与应用有效载荷字节不是相同口径。Zeek 官方字段定义区分这两个量。<a class="citation" href="https://docs.zeek.org/en/current/scripts/base/protocols/conn/main.zeek.html">25</a></p>
+<p>需要看配置右侧的源字段，不能根据 stanza 名 <code>FIELDALIAS-orig_bytes</code> 就以为映射来自 <code>orig_bytes</code>。实际使用 <code>orig_ip_bytes</code>，与应用有效载荷字节不是相同口径。Zeek 官方字段定义区分这两个量。<a href="https://docs.zeek.org/en/current/scripts/base/protocols/conn/main.zeek.html">25</a></p>
 <p>本地插件还用 <code>local_orig</code>、<code>local_resp</code> 派生 direction，无法判定时设置 unknown。若采集数据没有匹配这些条件所需的值，“外发流量”过滤就可能漏掉事件；真实输入中的布尔值解析也需要验证。<a href="../Splunk_TA_zeek/default/props.conf">L01</a></p>
 <p>事件分类链路为：<a href="../Splunk_TA_zeek/default/eventtypes.conf">L02</a><a href="../Splunk_TA_zeek/default/tags.conf">L03</a><a href="../Splunk_SA_CIM/default/data/models/Network_Traffic.json">L04</a></p>
 <pre><code class="language-text">sourcetype=zeek:conn
@@ -509,31 +508,31 @@ FIELDALIAS-resp_bytes = resp_ip_bytes ASNEW bytes_in
     → 使用 src、dest、bytes_out 等字段进行分析
 </code></pre>
 <p>【解释】这里证明了映射方式，尚未证明目标环境的实际日志能正确命中全部约束，也未证明 ES 内置本地 UEBA 正式支持任意 Zeek 数据替代已验证数据源。应实测字段、模型对象覆盖和内容依赖。</p>
-<h3 id="part-02-43-cim">4.3 CIM 的实际价值与边界</h3>
-<p>本地 CIM 8.7.0 提供 Network_Traffic、Authentication、Endpoint 等模型定义。ES 8.6 本地 UEBA 所需数据源页面列出 Authentication、Network_Traffic、Web、Change、Endpoint、Email 六类模型及对应已验证来源。<a href="../Splunk_SA_CIM/default/data/models/Network_Traffic.json">L04</a><a href="../Splunk_SA_CIM/default/app.conf">L06</a><a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/required-sourcetypes-for-ueba-detections">11</a></p>
+<h3>4.3 CIM 的实际价值与边界</h3>
+<p>本地 CIM 8.7.0 提供 Network_Traffic、Authentication、Endpoint 等模型定义。ES 8.6 本地 UEBA 所需数据源页面列出 Authentication、Network_Traffic、Web、Change、Endpoint、Email 六类模型及对应已验证来源。<a href="../Splunk_SA_CIM/default/data/models/Network_Traffic.json">L04</a><a href="../Splunk_SA_CIM/default/app.conf">L06</a><a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/required-sourcetypes-for-ueba-detections">11</a></p>
 <p>【解释】标准化使规则可以面向“认证行为”而非某个厂商的原始格式，但不负责创造缺失信息。网络连接日志没有用户身份，字段别名不会产生可信用户；TLS 元数据没有文件内容，映射到 Web 或网络模型也不会得到敏感文档名称。</p>
-<h2 id="part-02-5-spl">5. SPL 如何执行，为什么查询写法影响成本</h2>
-<p>SPL 采用管道表达处理步骤：筛选事件、提取字段、计算、聚合和输出。命令的执行属性决定工作能够在 Indexer 分散完成，还是需要把数据汇集到 Search Head。可分布式 streaming 与集中式 streaming 是不同类别；“streaming 命令”也不等于持续消费消息的独立实时系统。<a class="citation" href="https://help.splunk.com/en/splunk-cloud-platform/search/search-manual/10.2.2510/search-overview/types-of-commands">4</a></p>
+<h2>5. SPL 如何执行，为什么查询写法影响成本</h2>
+<p>SPL 采用管道表达处理步骤：筛选事件、提取字段、计算、聚合和输出。命令的执行属性决定工作能够在 Indexer 分散完成，还是需要把数据汇集到 Search Head。可分布式 streaming 与集中式 streaming 是不同类别；“streaming 命令”也不等于持续消费消息的独立实时系统。<a href="https://help.splunk.com/en/splunk-cloud-platform/search/search-manual/10.2.2510/search-overview/types-of-commands">4</a></p>
 <p>【示例】以下查询仅用于解释执行结构，未在 Splunk 上运行；假设索引、插件和字段都已经配置正确：</p>
 <pre><code class="language-spl">index=network sourcetype=zeek:conn earliest=-65m latest=-5m
-| where direction="outbound" AND isnotnull(src) AND isnotnull(bytes_out)
+| where direction=&quot;outbound&quot; AND isnotnull(src) AND isnotnull(bytes_out)
 | stats sum(bytes_out) AS outgoing_ip_bytes count AS connections BY src
 | sort - outgoing_ip_bytes
 </code></pre>
 <p>从语义看，它计算一个固定历史窗口内各源地址的外发 IP 字节量。它不包含身份解析、个人基线或异常判定，也不能被称为完整的外泄检测。</p>
 <p>【解释】越早限制索引、时间和候选集合，越容易减少后续处理量。全局排序、高基数聚合、复杂关联和大规模字段提取都可能增加内存或汇集开销。不能简单认为“加几台 Indexer，所有 SPL 就线性变快”；实际执行计划还需 Job Inspector 等运行证据确认。</p>
-<h3 id="part-02-51">5.1 普通查询、摘要和数据模型加速</h3>
-<p>【事实】Data Model Acceleration 为数据模型的字段建立额外 tsidx 摘要。它加速一组模型字段上的分析，与针对单条报表的预计算不同。<code>tstats summariesonly=true</code> 只读取已摘要部分，不返回未摘要数据。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise/manage-knowledge-objects/knowledge-management-manual/10.0/use-data-summaries-to-accelerate-searches/accelerate-data-models">5</a></p>
+<h3>5.1 普通查询、摘要和数据模型加速</h3>
+<p>【事实】Data Model Acceleration 为数据模型的字段建立额外 tsidx 摘要。它加速一组模型字段上的分析，与针对单条报表的预计算不同。<code>tstats summariesonly=true</code> 只读取已摘要部分，不返回未摘要数据。<a href="https://help.splunk.com/en/splunk-enterprise/manage-knowledge-objects/knowledge-management-manual/10.0/use-data-summaries-to-accelerate-searches/accelerate-data-models">5</a></p>
 <p>【示例】</p>
 <pre><code class="language-spl">| tstats summariesonly=true sum(All_Traffic.bytes_out) AS outgoing_ip_bytes
   FROM datamodel=Network_Traffic.All_Traffic
-  WHERE earliest=-65m latest=-5m All_Traffic.direction="outbound"
+  WHERE earliest=-65m latest=-5m All_Traffic.direction=&quot;outbound&quot;
   BY All_Traffic.src
 </code></pre>
 <p>这段示意假设数据模型已加速、字段有效且摘要覆盖了时间范围。它与上面的原始索引查询可能并非完全相同的数据集合，尤其当模型还纳入了其他来源时。验证时必须先统一范围。</p>
 <p>【解释】摘要会把字段解释的计算成本提前付出，但也形成新鲜度问题。若摘要落后 20 分钟，使用 <code>summariesonly=true</code> 的查询可能很快返回少量数据，而不是显式报错。对安全检测来说，结果少不一定意味着行为少。</p>
-<h2 id="part-02-6">6. 搜索怎样成为持续运行的检测</h2>
-<p>【事实】本地 UEBA 的保存搜索不只有最后一条检测，还包含 summarization、consolidation、feature 和 scoring；宏与 KV Store 一起参与运行。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a></p>
+<h2>6. 搜索怎样成为持续运行的检测</h2>
+<p>【事实】本地 UEBA 的保存搜索不只有最后一条检测，还包含 summarization、consolidation、feature 和 scoring；宏与 KV Store 一起参与运行。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a></p>
 <p>【解释】其工程本质是具有依赖关系的派生数据流水线。可以用下面的依赖示意理解，而不能把示意中的具体顺序或周期当成厂商所有规则的实现：</p>
 <pre><code class="language-text">可分析事件
    → 小窗口摘要
@@ -542,7 +541,7 @@ FIELDALIAS-resp_bytes = resp_ip_bytes ASNEW bytes_in
    → 当前行为评分
    → 输出信号
 </code></pre>
-<h3 id="part-02-61">6.1 三种时间必须分清</h3>
+<h3>6.1 三种时间必须分清</h3>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -551,8 +550,7 @@ FIELDALIAS-resp_bytes = resp_ip_bytes ASNEW bytes_in
 <th>决定什么</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>数据事件时间</td>
 <td>09:40 发生传输</td>
 <td>行为所属窗口</td>
@@ -567,17 +565,16 @@ FIELDALIAS-resp_bytes = resp_ip_bytes ASNEW bytes_in
 <td>使用 00:00 前已完成历史</td>
 <td>比较参考是否泄漏当前信息</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>【示例】每 5 分钟运行一次，读取 <code>[now-10m, now-5m)</code>，是在为到达延迟留缓冲。这种调度仍需补采处理：晚到 30 分钟的数据会错过正常窗口。若扩大查询窗口，又可能重复产出信号。</p>
 <p>可以给自研信号定义 <code>hash(检测版本, 实体ID, 窗口起点, 证据集合标识)</code> 作为幂等键。回放时先更新已有信号而非再次加分。这是自研设计示意，不是 Splunk 已公开的幂等算法。</p>
-<h3 id="part-02-62">6.2 状态错位比单次失败更难发现</h3>
+<h3>6.2 状态错位比单次失败更难发现</h3>
 <p>【解释】特征搜索使用今天的数据，而 scoring 搜索读到前天的基线，作业可能全部“成功”却给出错误结果。因此流水线健康不能只有成功/失败，还需要数据覆盖截止点、基线版本、输入分区及最后更新时刻。</p>
 <p>修改字段映射后，也可能同时存在旧口径摘要、新口径原始搜索和旧基线。若没有变更边界，系统会把口径变化误判成行为变化。数据模型、特征与检测版本需要一起审计。</p>
-<h2 id="part-02-7">7. 高可用和扩展：副本解决什么</h2>
-<p>【事实】索引集群按 bucket 复制。Replication Factor 描述数据副本数量，Search Factor 描述可搜索副本数量，后者不能大于前者。可搜索副本包含用于查询的索引文件；只有原始数据的副本与可立即搜索的副本并不等价。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise/administer/manage-indexers-and-indexer-clusters/10.4/how-indexer-clusters-work/search-factor">6</a></p>
+<h2>7. 高可用和扩展：副本解决什么</h2>
+<p>【事实】索引集群按 bucket 复制。Replication Factor 描述数据副本数量，Search Factor 描述可搜索副本数量，后者不能大于前者。可搜索副本包含用于查询的索引文件；只有原始数据的副本与可立即搜索的副本并不等价。<a href="https://help.splunk.com/en/splunk-enterprise/administer/manage-indexers-and-indexer-clusters/10.4/how-indexer-clusters-work/search-factor">6</a></p>
 <p>【解释】容量规划要同时考虑正常查询与故障期间恢复。集群节点故障后补副本、重建索引或恢复摘要，都会与业务计算争用资源。副本也不是长期备份：错误配置、错误删除或污染状态可能影响多个副本。</p>
-<h3 id="part-02-71">7.1 一个仅用于量级沟通的容量例子</h3>
+<h3>7.1 一个仅用于量级沟通的容量例子</h3>
 <p>【示例】假定 20,000 EPS、每事件平均 800 字节，则原始输入为：</p>
 <pre><code class="language-text">每日事件数 = 20,000 × 86,400 = 1,728,000,000
 每日字节数 = 1,728,000,000 × 800 = 1,382,400,000,000
@@ -586,14 +583,15 @@ FIELDALIAS-resp_bytes = resp_ip_bytes ASNEW bytes_in
 </code></pre>
 <p>这不是磁盘需求，也不是 Splunk 官方性能数据。磁盘估计还需要实测压缩、索引、摘要及副本开销。CPU 和内存取决于字段提取、并发查询、实体与分组基数、模型和回算强度，不能从 EPS 单独推算。</p>
 <p>行为状态还有另一种规模：<code>实体数 × 特征数 × 时间分桶数</code>。例如 10 万实体、40 个特征、30 个每日槽位就是 1.2 亿个特征槽位，尚未包含稀有值集合及多对多关系。不能因原始数据存储充裕就认为 KV 或特征层不会成为瓶颈。</p>
-<h2 id="part-02-8">8. 权限、变更与可观测性</h2>
-<p>【事实】ES UEBA 区分管理员、分析师及普通用户的知识对象访问；8.7 文档尤其限制特征、关联身份和资产集合的访问。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a></p>
+<h2>8. 权限、变更与可观测性</h2>
+<p>【事实】ES UEBA 区分管理员、分析师及普通用户的知识对象访问；8.7 文档尤其限制特征、关联身份和资产集合的访问。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a></p>
 <p>【解释】画像本身比单条日志更容易暴露人员行为模式。自研权限需要作用于数据、模型状态、检测编辑、例外规则和案件，不能只限制仪表盘菜单。计划任务以何种身份访问哪些数据，也会改变检测覆盖。</p>
-<p>应分别监控接入、解析、模型覆盖、特征更新、检测调度、信号产出、风险刷新和调查回查。对“没有告警”至少区分：正常无异常、没有输入、字段缺失、模型未成熟、任务未运行、摘要落后、权限不足、被排除。Splunk 的 UEBA 审计页提供了这种诊断方向，但具体自研指标仍需设计。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/auditing-ueba-with-dashboards-in-splunk-enterprise-security">10</a></p>
-<h2 id="part-02-9">9. 平台机制对自研的含义</h2>
+<p>应分别监控接入、解析、模型覆盖、特征更新、检测调度、信号产出、风险刷新和调查回查。对“没有告警”至少区分：正常无异常、没有输入、字段缺失、模型未成熟、任务未运行、摘要落后、权限不足、被排除。Splunk 的 UEBA 审计页提供了这种诊断方向，但具体自研指标仍需设计。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/auditing-ueba-with-dashboards-in-splunk-enterprise-security">10</a></p>
+<h2>9. 平台机制对自研的含义</h2>
 <p>能借鉴的是“保留事实、统一语义、复用计算、按实体组织状态、解释结果”的机制。是否实现通用 SPL、是否采用搜索引擎、是否引入流处理及独立特征存储，应由具体场景和测量结果决定。</p>
-<p>本次证据不足以复现 Splunk 的 tsidx 二进制格式、完整查询优化器、云服务内部拓扑、全链路投递一致性及所有调度实现。它们是待单独验证的边界，不应在自研预算中被当作已经解决的问题。</p></section><section id="part-03"><h1 id="part-03-splunk">Splunk 行为检测与风险机制</h1>
-<h2 id="part-03-1">1. 分开理解两条分析路径</h2>
+<p>本次证据不足以复现 Splunk 的 tsidx 二进制格式、完整查询优化器、云服务内部拓扑、全链路投递一致性及所有调度实现。它们是待单独验证的边界，不应在自研预算中被当作已经解决的问题。</p>
+</section><section id="part-03"><h1>Splunk 行为检测与风险机制</h1>
+<h2>1. 分开理解两条分析路径</h2>
 <pre><code class="language-text">ES 内置 UEBA 路径（概念）
 标准化事件 → 特征与基线 → 行为偏离 → intermediate finding
                                        ↓
@@ -614,11 +612,11 @@ Splunk 数据 → UBA 解析与身份归一 → 分析视图/聚合存储
                                        ↓
                                可回传 Splunk 平台
 </code></pre>
-<p>【事实】两条路径分别来自 ES UEBA、独立 UBA 的模型及数据流文档。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/user-and-entity-behavior-analytics-ueba-overview-in-splunk-enterprise-security">8</a><a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a><a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/splunk-uba-models-overview">18</a> 图中的对应关系用于解释职责，不表示 intermediate finding 与 UBA anomaly 在数据结构、评分尺度和生命周期上相同。</p>
+<p>【事实】两条路径分别来自 ES UEBA、独立 UBA 的模型及数据流文档。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/user-and-entity-behavior-analytics-ueba-overview-in-splunk-enterprise-security">8</a><a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a><a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/splunk-uba-models-overview">18</a> 图中的对应关系用于解释职责，不表示 intermediate finding 与 UBA anomaly 在数据结构、评分尺度和生命周期上相同。</p>
 <p>独立 UBA 的 Kafka/Spark/HDFS 架构不能直接套到 ES 内置 UEBA；本地 UEBA 使用保存搜索和 KV Store，也不能反向推断所有云端模型采用相同组件。</p>
-<h2 id="part-03-2">2. 实体与画像：行为检测的计算主键</h2>
-<h3 id="part-03-21-ip">2.1 人、账号、设备、IP 和会话不是一回事</h3>
-<p>【事实】独立 UBA 会归一设备与域名，将 HR 数据识别出的账号关联到人，并维护 IP、主机名与用户的时间关系。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a></p>
+<h2>2. 实体与画像：行为检测的计算主键</h2>
+<h3>2.1 人、账号、设备、IP 和会话不是一回事</h3>
+<p>【事实】独立 UBA 会归一设备与域名，将 HR 数据识别出的账号关联到人，并维护 IP、主机名与用户的时间关系。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a></p>
 <p>【解释】同一人可能有普通账号和管理员账号；同一服务账号可能被多人使用；同一 IP 在一天内可能属于多个设备。若将账号名或 IP 直接作为永久人员 ID，个体基线、跨事件关联和风险评分都会产生偏差。</p>
 <p>【示例】用于解释所需信息的实体关系结构：</p>
 <pre><code class="language-text">person_id=P001
@@ -633,7 +631,7 @@ Splunk 数据 → UBA 解析与身份归一 → 分析视图/聚合存储
   confidence=high
 </code></pre>
 <p>该结构不是 Splunk schema。它说明自研若要解释“为什么将此网络行为归给此人”，需要时间边界、来源和置信度。冲突时保留多个候选或仅归设备，比无依据地合并更符合证据。</p>
-<h3 id="part-03-22">2.2 属性画像与行为画像</h3>
+<h3>2.2 属性画像与行为画像</h3>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -643,8 +641,7 @@ Splunk 数据 → UBA 解析与身份归一 → 分析视图/聚合存储
 <th>用途</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>属性画像</td>
 <td>部门、岗位、权限、设备角色、重要程度</td>
 <td>HR、AD、CMDB、人工配置</td>
@@ -662,14 +659,13 @@ Splunk 数据 → UBA 解析与身份归一 → 分析视图/聚合存储
 <td>检测和运营流程</td>
 <td>安排调查顺序</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>【解释】部门调整应改变相应群体成员关系，但不能把历史部门无痕覆盖；风险分回落也不表示用户的正常行为画像发生相同变化。把三者存成一个不可追踪的“用户分数”会丢失这些语义。</p>
-<h2 id="part-03-3-es-ueba">3. ES 本地 UEBA：公开到什么实现深度</h2>
-<p>【事实】8.7 知识对象页列出检测及对应的摘要、合并、特征和评分搜索；KV Store 记录特征值及关联身份/资产；宏封装映射、转换、特征计算和评分；Transforms 让集合可被 SPL 访问。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a></p>
+<h2>3. ES 本地 UEBA：公开到什么实现深度</h2>
+<p>【事实】8.7 知识对象页列出检测及对应的摘要、合并、特征和评分搜索；KV Store 记录特征值及关联身份/资产；宏封装映射、转换、特征计算和评分；Transforms 让集合可被 SPL 访问。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a></p>
 <p>【解释】这能证明它是多个知识对象协作的有状态检测体系。不能据此推定每条规则都使用相同的每日窗口、相同 KV schema，或同一种训练算法。特别是本次没有拿到 UEBA Content App 的内部保存搜索，不能将自行编写的 SPL 称作还原代码。</p>
-<h3 id="part-03-31">3.1 已公开的两类计算行为</h3>
-<p>【事实】本地 UEBA System 审计页公开：<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/auditing-ueba-with-dashboards-in-splunk-enterprise-security">10</a></p>
+<h3>3.1 已公开的两类计算行为</h3>
+<p>【事实】本地 UEBA System 审计页公开：<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/auditing-ueba-with-dashboards-in-splunk-enterprise-security">10</a></p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -678,8 +674,7 @@ Splunk 数据 → UBA 解析与身份归一 → 分析视图/聚合存储
 <th>不能从页面得出的结论</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>Rare Device*</td>
 <td>登录活动包含多个特征分；分越低越稀有；小于 0.002 的特征标为稀有；<code>behavior_rarity</code> 表示稀有特征数量</td>
 <td>每个特征分必然是简单概率；所有 Rare 检测统一采用该阈值</td>
@@ -689,26 +684,25 @@ Splunk 数据 → UBA 解析与身份归一 → 分析视图/聚合存储
 <td>展示用户的特征值及个体基线阈值；超过阈值被视为潜在风险</td>
 <td>阈值一定由均值加三倍标准差或某固定分位数计算</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>稀有特征数量高仍不保证生成 intermediate finding，因为还存在降低误报的额外逻辑。模型是否在工作，要看特征与基线状态，不能只看是否有告警。</p>
-<h3 id="part-03-32">3.2 不能把“有统计”理解成“不需要训练”</h3>
-<p>【事实】UEBA 检测基于学习的历史基线；官方表示可能最长需要 30 天才产出异常。该表述不是所有检测必须等待恰好 30 天，也不是所有模型统一使用 30 天窗口。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/user-and-entity-behavior-analytics-ueba-overview-in-splunk-enterprise-security">8</a><a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/review-findings-generated-by-ueba-detections">14</a></p>
+<h3>3.2 不能把“有统计”理解成“不需要训练”</h3>
+<p>【事实】UEBA 检测基于学习的历史基线；官方表示可能最长需要 30 天才产出异常。该表述不是所有检测必须等待恰好 30 天，也不是所有模型统一使用 30 天窗口。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/user-and-entity-behavior-analytics-ueba-overview-in-splunk-enterprise-security">8</a><a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/review-findings-generated-by-ueba-detections">14</a></p>
 <p>【解释】频率表、历史分位数、滑动均值也需要累积数据并更新状态。“统计方法容易实现”不意味着没有冷启动、漂移、数据稀疏和基线污染问题。</p>
-<h3 id="part-03-33">3.3 云端与本地需要明确分界</h3>
-<p>【事实】8.5 的 findings 复核页明确写出：<code>ba_test</code> 对 UEBA 仅适用于云部署。本地不能直接照搬云端测试索引切换流程。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/review-findings-generated-by-ueba-detections">14</a></p>
-<p>【事实】ES 8.7 检测页说不能修改底层 SPL 或检测逻辑，且 UEBA 检测不支持 CIM entity zones；同版本知识对象权限页却授予管理员搜索、宏和集合写权限，甚至列出修改检测的角色条件。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security">26</a><a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a></p>
+<h3>3.3 云端与本地需要明确分界</h3>
+<p>【事实】8.5 的 findings 复核页明确写出：<code>ba_test</code> 对 UEBA 仅适用于云部署。本地不能直接照搬云端测试索引切换流程。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/review-findings-generated-by-ueba-detections">14</a></p>
+<p>【事实】ES 8.7 检测页说不能修改底层 SPL 或检测逻辑，且 UEBA 检测不支持 CIM entity zones；同版本知识对象权限页却授予管理员搜索、宏和集合写权限，甚至列出修改检测的角色条件。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security">26</a><a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a></p>
 <p>两页存在未解决的支持口径差异。报告分别记录“功能说明的限制”与“知识对象的权限能力”，不作“任何部署都不可编辑”或“管理员可以受支持地修改全部内置规则”的概括。需要在目标版本及应用包上由厂商或实测确认。</p>
 <p>此外，普通 ES 资产/身份能力不能未经核实就外推为内置 UEBA 支持；尤其不能假设 entity zones 已解决其多租户同名实体隔离。</p>
-<h2 id="part-03-4">4. 把典型行为算法讲清楚</h2>
+<h2>4. 把典型行为算法讲清楚</h2>
 <p>本节全部属于【示例】：用可计算的方法解释公开检测类别，未声称 Splunk 使用以下公式、参数或算法组合。</p>
-<h3 id="part-03-41">4.1 罕见目标：相对谁罕见</h3>
+<h3>4.1 罕见目标：相对谁罕见</h3>
 <p>对账号 u 访问目的地 d，定义过去已完成历史窗口的访问次数 <code>n(u,d)</code> 和该账号总访问量 <code>N(u)</code>。一个平滑频率例子是：</p>
 <pre><code class="language-text">p(d|u) = (n(u,d) + α) / (N(u) + αK)
 </code></pre>
 <p>K 是已定义的类别空间大小，α 是平滑参数。若没有定义新类别如何进入 K，这个公式还不是完整实现。频率很低可以表示稀有；进一步还需区分“个人新目标但同部门常见”与“整个群体都少见”。</p>
 <p>假设员工第一次访问公司新上线的文档服务，个人频率为零，但同部门多数人都在访问；它与首次访问无人使用的外部存储具有不同解释。单条稀有信号应携带个人与群体参考、历史覆盖天数及首次观察时间。</p>
-<h3 id="part-03-42">4.2 流量异常：当前值与可比历史</h3>
+<h3>4.2 流量异常：当前值与可比历史</h3>
 <p>对同一设备每天的外发 IP 字节量，可以用历史有效样本的高分位数 Q 作为阈值，或者用稳健离差：</p>
 <pre><code class="language-text">m = median(历史有效日数值)
 MAD = median(|x - m|)
@@ -716,24 +710,24 @@ z_robust = 0.6745 × (当前值 - m) / MAD
 </code></pre>
 <p>这只是候选解释方法。MAD 为零时必须退化处理，长尾分布可能需要对数变换；使用分位数时则要说明有效样本数与分位数算法。28 天历史并不意味着 28 个有效可比样本，节假日、缺报和设备离线需要区分。</p>
 <p>特别要区分“零行为”与“未采到数据”：完整观测的一天没有外发可以是零；采集器故障一天应是缺失。错误补零会把未来正常流量变成异常峰值。</p>
-<h3 id="part-03-43">4.3 同伴组：解决群体参照，不消除偏差</h3>
-<p>【事实】独立 UBA 公开了 HR、OU、行为聚类和设备活动等同伴分组思路。Peer Groups 专页说明行为组使用登录、会话、AD 等活动；组按日更新，账号及设备组有数据资格条件。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/splunk-uba-models-overview">18</a><a class="citation" href="https://help.splunk.com/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.3.0/assess-security-posture/review-peer-groups-in-splunk-uba">19</a></p>
+<h3>4.3 同伴组：解决群体参照，不消除偏差</h3>
+<p>【事实】独立 UBA 公开了 HR、OU、行为聚类和设备活动等同伴分组思路。Peer Groups 专页说明行为组使用登录、会话、AD 等活动；组按日更新，账号及设备组有数据资格条件。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/splunk-uba-models-overview">18</a><a href="https://help.splunk.com/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.3.0/assess-security-posture/review-peer-groups-in-splunk-uba">19</a></p>
 <p>【解释】组织组易解释但可能混入不同工作职责；行为组更贴近活动，却可能把多个同样受攻击的实体归为“正常同伴”。小群体、岗位迁移和集体上线新系统都会改变比较基准。</p>
 <p>ES 本地规则名中的 <code>by Company</code> / <code>by Business Unit</code> 只能作为群体维度的线索，不能证明其使用了独立 UBA 的行为聚类算法，也不能断言个体与群体阈值必须同时满足。</p>
-<h3 id="part-03-44">4.4 时间与序列：顺序是额外的信息</h3>
+<h3>4.4 时间与序列：顺序是额外的信息</h3>
 <p>【示例】“多次认证失败 → 认证成功 → 权限变化 → 外部传输”需要定义关联账号、会话或设备，规定顺序、最大间隔、跨日行为以及重复事件处理。仅统计同一天出现四类事件，不等于验证了这条序列。</p>
 <p>序列窗口太短会漏掉慢速活动；太长会将无关正常事件连接起来。对共享 IP 仅按地址关联尤其容易误判。展示时间线有助调查，但有时间线并不表示底层检测真的执行了序列匹配。</p>
-<h3 id="part-03-45">4.5 多维机器学习：算法只是链路中的一部分</h3>
-<p>【事实】MLTK 的 <code>fit</code> 用训练数据产生模型，<code>apply</code> 将已学习模型应用到后续搜索结果；这类命令有自己的预处理和运行限制。<a class="citation" href="https://help.splunk.com/en/splunk-cloud-platform/apply-machine-learning/use-ai-toolkit/5.6.0/mltk-commands-macros-and-visualizations/about-the-fit-and-apply-commands">23</a></p>
+<h3>4.5 多维机器学习：算法只是链路中的一部分</h3>
+<p>【事实】MLTK 的 <code>fit</code> 用训练数据产生模型，<code>apply</code> 将已学习模型应用到后续搜索结果；这类命令有自己的预处理和运行限制。<a href="https://help.splunk.com/en/splunk-cloud-platform/apply-machine-learning/use-ai-toolkit/5.6.0/mltk-commands-macros-and-visualizations/about-the-fit-and-apply-commands">23</a></p>
 <p>【解释】是否采用聚类、密度或其他异常算法，应首先看输入特征是否稳定。将访问量、目的地数量、夜间占比直接混合而不处理量纲、缺失和重尾分布，得到的距离可能只是数据尺度差异。</p>
 <p>机器学习输出需要保留模型版本、训练范围、特征版本和解释依据。文档列出某个 MLTK 算法，并不意味着 ES UEBA 或独立 UBA 的某个具体模型正在使用它。</p>
-<h2 id="part-03-5-uba">5. 独立 UBA：流式模型、批量模型和分析存储</h2>
-<p>【事实】UBA 5.4.0 架构文档公开管理、流式与批量三类逻辑角色。管理侧列有 UI、Job Manager、PostgreSQL、Impala 等服务；流式侧列有 Kafka、Redis 等；批量侧列有 Spark 和 HDFS。各节点的实际服务组合随部署规模变化。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/plan-and-scale/5.4.0/plan-and-scale-your-splunk-uba-deployment/splunk-uba-deployment-architecture">16</a></p>
+<h2>5. 独立 UBA：流式模型、批量模型和分析存储</h2>
+<p>【事实】UBA 5.4.0 架构文档公开管理、流式与批量三类逻辑角色。管理侧列有 UI、Job Manager、PostgreSQL、Impala 等服务；流式侧列有 Kafka、Redis 等；批量侧列有 Spark 和 HDFS。各节点的实际服务组合随部署规模变化。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/plan-and-scale/5.4.0/plan-and-scale-your-splunk-uba-deployment/splunk-uba-deployment-architecture">16</a></p>
 <p>【解释】这里的意义是区分低延迟处理和长历史计算的资源形态，而不是给自研列一张必须全部采购或部署的组件清单。该文档也不足以精确指认每一种对象保存于哪个内部表或数据库。</p>
-<h3 id="part-03-51">5.1 从原始事件到分析视图</h3>
-<p>【事实】UBA 可通过 Direct connector 接收 Splunk 侧解析数据，也可用 Raw Events connector 交给 UBA 原生解析器。解析与实体处理后，按数据类型组织相关字段，存入 data cubes；模型基于聚合数据进行分析。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a></p>
+<h3>5.1 从原始事件到分析视图</h3>
+<p>【事实】UBA 可通过 Direct connector 接收 Splunk 侧解析数据，也可用 Raw Events connector 交给 UBA 原生解析器。解析与实体处理后，按数据类型组织相关字段，存入 data cubes；模型基于聚合数据进行分析。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a></p>
 <p>【解释】所谓 cube 可以理解为按某些维度和粒度组织的分析数据，而不是“必须是某种固定 OLAP 产品”。聚合使模型不必每次处理全部原文，但丢失的明细必须能够通过原始数据或关联证据补查。</p>
-<h3 id="part-03-52">5.2 四类模型不是四套互斥算法</h3>
+<h3>5.2 四类模型不是四套互斥算法</h3>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -742,8 +736,7 @@ z_robust = 0.6745 × (当前值 - m) / MAD
 <th>输出</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>Streaming models</td>
 <td>面向新事件和较短窗口处理，保留时序相关状态</td>
 <td>异常、IoC、分析数据</td>
@@ -763,12 +756,11 @@ z_robust = 0.6745 × (当前值 - m) / MAD
 <td>综合数据与异常形成具体威胁</td>
 <td>威胁对象</td>
 </tr>
-</tbody>
-</table></div>
-<p>【事实】这些分类来自 UBA 模型文档；所有 threat models 被描述为批量模型。部分用例同时使用流式候选识别和离线异常生成。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/splunk-uba-models-overview">18</a></p>
+</tbody></table></div>
+<p>【事实】这些分类来自 UBA 模型文档；所有 threat models 被描述为批量模型。部分用例同时使用流式候选识别和离线异常生成。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/splunk-uba-models-overview">18</a></p>
 <p>【解释】所以“UBA 支持实时流式分析”不等于“所有最终威胁实时出现”。计算延迟必须拆到信号、威胁与界面显示三个阶段测量。</p>
-<h2 id="part-03-6-anomaly-threat">6. 从 anomaly 到 threat：第二层安全判断</h2>
-<p>【事实】UBA 将 threat 定义为构成具体安全用例的一条或多条 anomaly，并可关联 IoC 与支持证据。公开路径包括 kill-chain、graph-based、data-driven 和 rule-based。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a></p>
+<h2>6. 从 anomaly 到 threat：第二层安全判断</h2>
+<p>【事实】UBA 将 threat 定义为构成具体安全用例的一条或多条 anomaly，并可关联 IoC 与支持证据。公开路径包括 kill-chain、graph-based、data-driven 和 rule-based。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">17</a></p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -777,8 +769,7 @@ z_robust = 0.6745 × (当前值 - m) / MAD
 <th>自研时需要额外明确的语义</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>Kill-chain</td>
 <td>对同一用户或设备的异常寻找攻击阶段模式</td>
 <td>阶段是否必须有序、缺失阶段如何处理</td>
@@ -798,32 +789,31 @@ z_robust = 0.6745 × (当前值 - m) / MAD
 <td>指定时间窗内满足自定义异常组合条件</td>
 <td>去重、事件复用、升级和案件合并</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>右栏是设计分析，不是已经公开的 Splunk 参数。</p>
-<h3 id="part-03-61">6.1 横向移动模型的具体例子</h3>
-<p>【事实】独立 UBA 横向移动模型使用内部活动数据，文档列出 AD、防火墙和终端来源；默认使用 30 天活动数据，可配置，并结合同伴活动与安全规则降低误报。其详情展示涉及设备、威胁关系及异常时间线。<a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/lateral-movement-model">20</a></p>
+<h3>6.1 横向移动模型的具体例子</h3>
+<p>【事实】独立 UBA 横向移动模型使用内部活动数据，文档列出 AD、防火墙和终端来源；默认使用 30 天活动数据，可配置，并结合同伴活动与安全规则降低误报。其详情展示涉及设备、威胁关系及异常时间线。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/lateral-movement-model">20</a></p>
 <p>【解释】这说明一个“模型”可能已经包含数据融合、统计行为、规则和证据组织，并不是单个数学函数。其 30 天配置仅适用于这个模型，不应成为所有 UBA 或 ES UEBA 的统一参数。</p>
-<h3 id="part-03-62">6.2 图关联不等于风险无条件传播</h3>
+<h3>6.2 图关联不等于风险无条件传播</h3>
 <p>【示例】员工甲和乙都访问了同一域名，可在调查图中产生关联。但若该域名是大型云服务公共入口，这条边的区分能力很弱。将甲的风险自动传播给乙，需要额外规则和证据，不能仅由“共享对象”得出。</p>
-<p>同样，ES threat topology 的展示机制与独立 UBA graph-based threat computation 是两个不同概念。拥有关系图 UI 不证明使用了图神经网络，更不能从图展示反推模型算法。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/review-findings-using-the-threat-topology-visualization-in-splunk-enterprise-security">22</a></p>
-<h2 id="part-03-7-es-rba">7. ES 的 RBA：风险证据如何组织</h2>
-<h3 id="part-03-71">7.1 风险对象、修饰和发现</h3>
-<p>【事实】风险修饰将实体字段、类型、分值和描述关联起来。检测可选择生成 finding 或 intermediate finding；可以对多个实体分别配置，也可以输出零分上下文。风险消息支持引用事件字段，threat object 可记录域名、哈希、命令行等关联对象。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a></p>
+<p>同样，ES threat topology 的展示机制与独立 UBA graph-based threat computation 是两个不同概念。拥有关系图 UI 不证明使用了图神经网络，更不能从图展示反推模型算法。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/review-findings-using-the-threat-topology-visualization-in-splunk-enterprise-security">22</a></p>
+<h2>7. ES 的 RBA：风险证据如何组织</h2>
+<h3>7.1 风险对象、修饰和发现</h3>
+<p>【事实】风险修饰将实体字段、类型、分值和描述关联起来。检测可选择生成 finding 或 intermediate finding；可以对多个实体分别配置，也可以输出零分上下文。风险消息支持引用事件字段，threat object 可记录域名、哈希、命令行等关联对象。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a></p>
 <p>【解释】一个原始事件可能产生用户和设备两份风险贡献。此时按人员、设备或全局做统计必须明确口径，不能将多实体表达误当成多条独立攻击证据。</p>
-<h3 id="part-03-72">7.2 风险因子：把上下文作用于分值</h3>
-<p>【事实】ES 风险因子的公开公式为先加后乘：<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/adjusting-risk-using-risk-factors-in-splunk-enterprise-security">21</a></p>
+<h3>7.2 风险因子：把上下文作用于分值</h3>
+<p>【事实】ES 风险因子的公开公式为先加后乘：<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/adjusting-risk-using-risk-factors-in-splunk-enterprise-security">21</a></p>
 <pre><code class="language-text">calculated_score = (base_score + Σaddition) × Πmultiplication
 </code></pre>
 <p>风险因子可以依赖实体属性或风险字段。文档指出总风险通过 Risk Data Model 动态计算，因此查询 <code>index=risk</code> 的基础分不一定等于采用风险模型得到的调整后分数。</p>
 <p>【示例】某外发异常基础分 20，命中一个 +5 因子和一个 ×1.5 因子，调整后为 37.5；另两条独立贡献为 30、25，则示例累计值为 92.5。小数如何显示或取整，应在目标实现核实。该值不是 ERS，也不是 92.5% 的恶意概率。</p>
 <p>因子越多不一定越准确。多个因子若表达同一业务事实，乘法叠加可能重复放大。上下文属性变更后的历史评分是否重算，必须与证据快照和审计口径一起设计。</p>
-<h3 id="part-03-73">7.3 从累计风险形成调查对象</h3>
-<p>【事实】finding-based detection 可以用累计实体风险阈值组织 finding group。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a></p>
+<h3>7.3 从累计风险形成调查对象</h3>
+<p>【事实】finding-based detection 可以用累计实体风险阈值组织 finding group。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a></p>
 <p>【示例】上面的 92.5 若超过某自定义阈值 80，并且涉及至少两类独立行为，就可以生成“疑似外泄”调查对象。阈值、多样性条件和场景名称是示例，不是 Splunk 默认值。</p>
 <p>总分只是聚合条件之一。确定性的高危行为可以由 event-based detection 直接输出 finding，不必等累计分。反过来，大量低质量风险条目累加到阈值也不自动具备高可信度。</p>
-<h2 id="part-03-8-ers">8. ERS：实体综合排序，公开公式的边界</h2>
-<p>【事实】ES 8.5 ERS 对过去 7 天至少出现一条 intermediate finding 的实体计算 0–100 分，计划搜索 <code>Risk - EWA Entity Risk Score Calculation</code> 默认每 20 分钟执行。页面公开五个输入组件，但未公布具体权重和完整归一化细节。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/entity-risk-scoring-in-splunk-enterprise-security">12</a></p>
+<h2>8. ERS：实体综合排序，公开公式的边界</h2>
+<p>【事实】ES 8.5 ERS 对过去 7 天至少出现一条 intermediate finding 的实体计算 0–100 分，计划搜索 <code>Risk - EWA Entity Risk Score Calculation</code> 默认每 20 分钟执行。页面公开五个输入组件，但未公布具体权重和完整归一化细节。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/entity-risk-scoring-in-splunk-enterprise-security">12</a></p>
 <p>对调整分集合 <code>s1…sn</code>，可将公开输入写为：</p>
 <pre><code class="language-text">C1 = Σsi                         总风险贡献
 C2 = max(si)                     单次最大贡献
@@ -833,11 +823,11 @@ C5 = Σd max(si | detection=d)     各检测最高贡献之和
 </code></pre>
 <p>这是对公开输入的数学转写，不是完整 ERS 计算式。不能直接将 C1～C5 按任意权重平均后声称获得了同样的实体分。</p>
 <p>【解释】C5 能反映检测多样性，但 C1、C3、C4 仍与事件频率相关。要证明抗重复能力，必须用同一证据重放、单规则高频噪声以及多规则同源命中的测试，观察最终分数和调查输出，而不是根据组件名称下结论。</p>
-<h3 id="part-03-81-ers">8.1 ERS 再触发检测的注意事项</h3>
-<p>【事实】官方允许使用 <code>ers</code> 索引结果创建检测。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/using-entity-risk-scores-for-detections-in-splunk-enterprise-security">27</a></p>
+<h3>8.1 ERS 再触发检测的注意事项</h3>
+<p>【事实】官方允许使用 <code>ers</code> 索引结果创建检测。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/using-entity-risk-scores-for-detections-in-splunk-enterprise-security">27</a></p>
 <p>【解释】这为“按实体整体风险升级”提供接口。但若升级结果又作为相同来源的风险贡献进入下一轮计算，可能出现自我放大。自研必须明确派生关系、哪些信号参与评分，以及如何避免聚合结果重复作为基础证据。官方提供接口不等于公开证明所有自定义闭环都安全。</p>
-<h2 id="part-03-9">9. 调优、排除和生命周期</h2>
-<p>【事实】Finding exclusion 作用于指定检测的 intermediate findings，并从 Risk Data Model 及相关 UEBA/风险视图中排除；可指定结束时间或无限期生效。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/finding-exclusions-in-splunk-enterprise-security">15</a></p>
+<h2>9. 调优、排除和生命周期</h2>
+<p>【事实】Finding exclusion 作用于指定检测的 intermediate findings，并从 Risk Data Model 及相关 UEBA/风险视图中排除；可指定结束时间或无限期生效。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/finding-exclusions-in-splunk-enterprise-security">15</a></p>
 <p>【解释】这不等于删除原始日志。若自研或自定义检测绕过风险模型，直接读取原始 risk index，可能没有遵循同一排除口径。排除应记录来源、范围、原因及到期，且复核它究竟影响信号生成、计分、显示还是三者。</p>
 <div class="table-wrap"><table>
 <thead>
@@ -847,8 +837,7 @@ C5 = Σd max(si | detection=d)     各检测最高贡献之和
 <th>混淆后的问题</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>抑制通知</td>
 <td>仍保留事实，只减少重复提醒</td>
 <td>被误认为风险已消失</td>
@@ -873,10 +862,9 @@ C5 = Σd max(si | detection=d)     各检测最高贡献之和
 <td>改变未来比较参考</td>
 <td>恶意行为被学习成正常</td>
 </tr>
-</tbody>
-</table></div>
-<p>【事实】ES 支持人工正负风险条目，进行一次性调整。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a> 【解释】负分本身也有时间窗生命周期；不能把“添加负分”视为永久清除某条历史风险。自研若使用此机制，应保留对冲对象和失效条件。</p>
-<h2 id="part-03-10">10. 目前不能声称已掌握的实现</h2>
+</tbody></table></div>
+<p>【事实】ES 支持人工正负风险条目，进行一次性调整。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a> 【解释】负分本身也有时间窗生命周期；不能把“添加负分”视为永久清除某条历史风险。自研若使用此机制，应保留对冲对象和失效条件。</p>
+<h2>10. 目前不能声称已掌握的实现</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -885,8 +873,7 @@ C5 = Σd max(si | detection=d)     各检测最高贡献之和
 <th>尚不能确认</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>ES 本地特征流水线</td>
 <td>搜索、宏、KV 等对象类型</td>
 <td>所有检测的 SPL、状态键、时序和阈值</td>
@@ -916,13 +903,13 @@ C5 = Σd max(si | detection=d)     各检测最高贡献之和
 <td>排除、上下文和人工反馈能力</td>
 <td>在本企业数据上的误报率与召回率</td>
 </tr>
-</tbody>
-</table></div>
-<p>技术机制可以解释清楚，但仅依靠公开材料不能做到专有产品的等价重现。将未知明确列出，是后续选择验证范围和研发投入的依据。</p></section><section id="part-04"><h1 id="part-04-splunk-ueba">Splunk 机制到自研 UEBA 的映射与验证边界</h1>
-<h2 id="part-04-1">1. 与现有项目的关系</h2>
-<p>现有《UEBA 异常检测实现设计》已经区分确定性规则、基线偏离、异常组合、行为序列、统计/机器学习及风险评分，并覆盖身份、主机与网络数据；《网络流量与 UEBA 异常行为检测清单》等资料也梳理了流量侧场景。<a href="../../UEBA 异常检测实现设计.md">L07</a><a href="../../网络流量与UEBA异常行为检测清单.md">L08</a></p>
+</tbody></table></div>
+<p>技术机制可以解释清楚，但仅依靠公开材料不能做到专有产品的等价重现。将未知明确列出，是后续选择验证范围和研发投入的依据。</p>
+</section><section id="part-04"><h1>Splunk 机制到自研 UEBA 的映射与验证边界</h1>
+<h2>1. 与现有项目的关系</h2>
+<p>现有《UEBA 异常检测实现设计》已经区分确定性规则、基线偏离、异常组合、行为序列、统计/机器学习及风险评分，并覆盖身份、主机与网络数据；《网络流量与 UEBA 异常行为检测清单》等资料也梳理了流量侧场景。<a href="../../UEBA%20%E5%BC%82%E5%B8%B8%E6%A3%80%E6%B5%8B%E5%AE%9E%E7%8E%B0%E8%AE%BE%E8%AE%A1.md">L07</a><a href="../../%E7%BD%91%E7%BB%9C%E6%B5%81%E9%87%8F%E4%B8%8EUEBA%E5%BC%82%E5%B8%B8%E8%A1%8C%E4%B8%BA%E6%A3%80%E6%B5%8B%E6%B8%85%E5%8D%95.md">L08</a></p>
 <p>因此，本报告不再预设另一套替代架构，而将 Splunk 的可核实机制映射成需要回答的产品和工程问题。以下所有自研结构、公式、测试阈值及数据例子均是分析或示例，不代表领导已选定方案，也不代表 Splunk 原始实现。</p>
-<h2 id="part-04-2">2. 按证据能力划分场景，而不是按产品检测数量</h2>
+<h2>2. 按证据能力划分场景，而不是按产品检测数量</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -932,8 +919,7 @@ C5 = Σd max(si | detection=d)     各检测最高贡献之和
 <th>结论边界</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>异常外发量</td>
 <td>连接、方向、字节、时间、目的地址</td>
 <td>设备身份、业务角色、批准服务目录</td>
@@ -981,12 +967,11 @@ C5 = Σd max(si | detection=d)     各检测最高贡献之和
 <td>邮件平台审计、附件信息、DLP</td>
 <td>外发数量不等于敏感附件泄露</td>
 </tr>
-</tbody>
-</table></div>
-<p>这些是由可观测性推导的场景边界。Splunk 的已验证来源页也说明本地 UEBA 涉及认证、终端、邮件等多种模型，不能把全部内容当作纯网络能力。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/required-sourcetypes-for-ueba-detections">11</a></p>
+</tbody></table></div>
+<p>这些是由可观测性推导的场景边界。Splunk 的已验证来源页也说明本地 UEBA 涉及认证、终端、邮件等多种模型，不能把全部内容当作纯网络能力。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/required-sourcetypes-for-ueba-detections">11</a></p>
 <p>检测条目数量会受用户/设备、公司/业务单元等维度展开影响。同一个算法模板可以产生多条内容；反过来，一个“横向移动模型”也可能整合多阶段逻辑。对标单位宜是“数据要求＋判定逻辑＋输出证据＋已测效果”，而不是规则名数量。</p>
-<h2 id="part-04-3">3. 一条防泄密链路的可复核数据示例</h2>
-<h3 id="part-04-31">3.1 观测与关系</h3>
+<h2>3. 一条防泄密链路的可复核数据示例</h2>
+<h3>3.1 观测与关系</h3>
 <p>虚构输入如下；地址使用文档示例网段，域名使用保留示例域名。</p>
 <pre><code class="language-text">E1 09:00  VPN: account=A, session=V001, assigned_ip=10.10.2.15
 E2 09:01  Endpoint: account=A, device=D001, logon_session=L001
@@ -999,48 +984,48 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 </code></pre>
 <p>通过有效时段内的 VPN 会话与设备登录，将网络行为关联到账号 A 与设备 D001，再由身份源将账号关联到人员 P001。E4 与 E5 通过同一传感器的连接标识关联；跨传感器不能未经验证就把 uid 当作全局唯一业务会话。</p>
 <p>E3 与 E4 的时间接近仅建立调查线索。除非有文件上传、终端或代理等证据，不得声称 E4 传输的就是 E3 读取的文件。</p>
-<h3 id="part-04-32">3.2 特征与基线快照</h3>
+<h3>3.2 特征与基线快照</h3>
 <pre><code class="language-json">{
-  "entity_id": "D001",
-  "entity_type": "device",
-  "feature_name": "daily_outgoing_ip_bytes",
-  "feature_version": "example-v1",
-  "window": "2026-09-10, Asia/Shanghai",
-  "current_value": 8589934592,
-  "unit": "IP bytes",
-  "baseline_value": 858993459.2,
-  "baseline_method": "illustrative threshold; not Splunk algorithm",
-  "baseline_cutoff": "2026-09-10T00:00:00+08:00",
-  "valid_history_days": 28,
-  "identity_resolution": "VPN and endpoint corroborated",
-  "evidence_ids": ["E1", "E2", "E4"]
+  &quot;entity_id&quot;: &quot;D001&quot;,
+  &quot;entity_type&quot;: &quot;device&quot;,
+  &quot;feature_name&quot;: &quot;daily_outgoing_ip_bytes&quot;,
+  &quot;feature_version&quot;: &quot;example-v1&quot;,
+  &quot;window&quot;: &quot;2026-09-10, Asia/Shanghai&quot;,
+  &quot;current_value&quot;: 8589934592,
+  &quot;unit&quot;: &quot;IP bytes&quot;,
+  &quot;baseline_value&quot;: 858993459.2,
+  &quot;baseline_method&quot;: &quot;illustrative threshold; not Splunk algorithm&quot;,
+  &quot;baseline_cutoff&quot;: &quot;2026-09-10T00:00:00+08:00&quot;,
+  &quot;valid_history_days&quot;: 28,
+  &quot;identity_resolution&quot;: &quot;VPN and endpoint corroborated&quot;,
+  &quot;evidence_ids&quot;: [&quot;E1&quot;, &quot;E2&quot;, &quot;E4&quot;]
 }
 </code></pre>
 <p>当前值与基线之比为 10。此处使用“当日累计值已经超过完整可比日阈值”的示例口径；实际系统应明确日内时段或完整窗口比较规则，避免把半天与全天数据直接视为同一种分布。阈值、历史天数均是示意。</p>
-<h3 id="part-04-33">3.3 信号结构：让结果能被复算</h3>
+<h3>3.3 信号结构：让结果能被复算</h3>
 <pre><code class="language-json">{
-  "signal_id": "example-signal-001",
-  "detector_id": "outgoing-volume-example",
-  "detector_version": "v1",
-  "entity_id": "D001",
-  "related_person_id": "P001",
-  "observed_at": "2026-09-10T09:40:00+08:00",
-  "produced_at": "2026-09-10T09:50:00+08:00",
-  "evidence_ids": ["E1", "E2", "E4", "E5"],
-  "feature_snapshot_id": "example-feature-001",
-  "base_score": 20,
-  "risk_factor_version": "example-rf-v1",
-  "calculated_score": 37.5,
-  "explanation": "外发IP字节已达历史示例阈值10倍",
-  "lineage": [],
-  "status": "active"
+  &quot;signal_id&quot;: &quot;example-signal-001&quot;,
+  &quot;detector_id&quot;: &quot;outgoing-volume-example&quot;,
+  &quot;detector_version&quot;: &quot;v1&quot;,
+  &quot;entity_id&quot;: &quot;D001&quot;,
+  &quot;related_person_id&quot;: &quot;P001&quot;,
+  &quot;observed_at&quot;: &quot;2026-09-10T09:40:00+08:00&quot;,
+  &quot;produced_at&quot;: &quot;2026-09-10T09:50:00+08:00&quot;,
+  &quot;evidence_ids&quot;: [&quot;E1&quot;, &quot;E2&quot;, &quot;E4&quot;, &quot;E5&quot;],
+  &quot;feature_snapshot_id&quot;: &quot;example-feature-001&quot;,
+  &quot;base_score&quot;: 20,
+  &quot;risk_factor_version&quot;: &quot;example-rf-v1&quot;,
+  &quot;calculated_score&quot;: 37.5,
+  &quot;explanation&quot;: &quot;外发IP字节已达历史示例阈值10倍&quot;,
+  &quot;lineage&quot;: [],
+  &quot;status&quot;: &quot;active&quot;
 }
 </code></pre>
-<p>上述结构参考了 Splunk 风险修饰关联实体、描述和威胁对象的思想，但字段由本报告构造。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a> 成熟实现还需定义证据访问权限、关系置信度、撤销或修订语义、幂等键及数据质量标记。</p>
-<h3 id="part-04-34">3.4 风险与案件不得再次制造事实</h3>
+<p>上述结构参考了 Splunk 风险修饰关联实体、描述和威胁对象的思想，但字段由本报告构造。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">13</a> 成熟实现还需定义证据访问权限、关系置信度、撤销或修订语义、幂等键及数据质量标记。</p>
+<h3>3.4 风险与案件不得再次制造事实</h3>
 <p>假定三条经确认独立的调整后贡献为 37.5、30、25，总和为 92.5。三个不同检测的最大分之和也为 92.5；最高单条分为 37.5，分数至少 50 的数量为零，发现数量为三。</p>
-<p>这些数值可以用于演示 ERS 的五类输入，却仍然无法计算 Splunk 的最终 ERS，因为其具体权重和归一化未公开。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/entity-risk-scoring-in-splunk-enterprise-security">12</a> 案件可以引用这三条信号，不能把案件生成本身再当成第四份独立攻击证据。</p>
-<h2 id="part-04-4">4. 可以比较的实现组织方式</h2>
+<p>这些数值可以用于演示 ERS 的五类输入，却仍然无法计算 Splunk 的最终 ERS，因为其具体权重和归一化未公开。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/entity-risk-scoring-in-splunk-enterprise-security">12</a> 案件可以引用这三条信号，不能把案件生成本身再当成第四份独立攻击证据。</p>
+<h2>4. 可以比较的实现组织方式</h2>
 <p>下表是工程取舍分析，未指定某个开源产品或技术栈，也不提供无实测依据的性能排名。</p>
 <div class="table-wrap"><table>
 <thead>
@@ -1051,8 +1036,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <th>成本或限制</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>搜索驱动</td>
 <td>在事件存储上定时执行查询、摘要与检测</td>
 <td>数据已集中，规则变化频繁，允许分钟级或更长延迟</td>
@@ -1070,16 +1054,15 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <td>既要交互调查也要多时间尺度计算</td>
 <td>两条路径的口径一致性和版本管理成本</td>
 </tr>
-</tbody>
-</table></div>
-<p>Splunk 平台与本地 UEBA 可以提供搜索驱动思路，独立 UBA 提供流式加批量计算思路；它们只能证明不同组织方式均有应用实例，不能证明某一种必然适合我们的数据规模。<a class="citation" href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">1</a><a class="citation" href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a><a class="citation" href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/plan-and-scale/5.4.0/plan-and-scale-your-splunk-uba-deployment/splunk-uba-deployment-architecture">16</a></p>
-<h3 id="part-04-41">4.1 是否复刻通用查询语言</h3>
+</tbody></table></div>
+<p>Splunk 平台与本地 UEBA 可以提供搜索驱动思路，独立 UBA 提供流式加批量计算思路；它们只能证明不同组织方式均有应用实例，不能证明某一种必然适合我们的数据规模。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">1</a><a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">9</a><a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/plan-and-scale/5.4.0/plan-and-scale-your-splunk-uba-deployment/splunk-uba-deployment-architecture">16</a></p>
+<h3>4.1 是否复刻通用查询语言</h3>
 <p>实现完整类 SPL 平台会扩展到解析器、优化器、权限、分布式执行、知识对象和兼容性。若产品只支持限定防泄密场景，可使用受控检测定义；若分析师需要自由探索，则通用查询能力价值更高。该判断属于产品范围选择，不能仅由“Splunk 有 SPL”得出。</p>
-<h3 id="part-04-42">4.2 是否引入复杂模型</h3>
+<h3>4.2 是否引入复杂模型</h3>
 <p>多维模型可能发现单一阈值遗漏的组合，也可能增加调试、样本需求和解释成本。个体统计能快速解释偏离，但会面对冷启动、小样本和角色变动。两者均需以真实业务误报样本和已知攻击样本验证，不以算法名称判定先进性。</p>
-<h3 id="part-04-43">4.3 是否把风险分作为主要入口</h3>
+<h3>4.3 是否把风险分作为主要入口</h3>
 <p>实体风险排序适合分析师主动调查，场景案件适合明确行动和闭环，直接告警适合确定性高危条件。可以并存，但必须避免同一行为在多入口被重复派发并重复计分。对用户呈现哪一种，应结合运营团队分工。</p>
-<h2 id="part-04-5">5. 机制验证矩阵</h2>
+<h2>5. 机制验证矩阵</h2>
 <p>本次未执行这些实验。它们是后续验证清单，不是本报告声称已经通过的验收结果。</p>
 <div class="table-wrap"><table>
 <thead>
@@ -1090,8 +1073,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <th>它回答什么问题</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>字段语义</td>
 <td>同一连接对比 Zeek 原文、TA 字段和 CIM 查询</td>
 <td>地址、方向、字节、时间一致；缺失有标记</td>
@@ -1169,11 +1151,10 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <td>找到全部贡献证据、时间及版本</td>
 <td>分析师是否能核实结论</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>对算法效果的评估至少同时报告：已审查告警的 precision、带标签场景的 recall、每千实体每日告警数、首次发现延迟分布及单案件调查耗时。真实生产中未被标注的攻击不能当作“没有漏报”，所以召回率必须声明测试集和攻击覆盖范围。</p>
 <p>指标可采用：<code>precision=TP/(TP+FP)</code>，<code>recall=TP/(TP+FN)</code>。分母为零时结果不可计算。测试必须按时间划分训练与验证，避免未来数据进入历史基线；对同一攻击跨窗口的重复告警还需统一计数单位。</p>
-<h2 id="part-04-6">6. 后续取证应取得什么</h2>
+<h2>6. 后续取证应取得什么</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -1182,8 +1163,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <th>能解决的未知</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>固定版本的 ES、UEBA Content App 清单</td>
 <td>对齐产品、版本、授权及部署模式</td>
 <td>规则可编辑性与能力范围</td>
@@ -1213,13 +1193,13 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <td>测量实用价值</td>
 <td>误报、场景覆盖和运营负担</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>这些材料用于确认运行机制、依赖及支持边界；是否复用具体检测内容，是后续独立的产品决策。</p>
-<h2 id="part-04-7">7. 对原有资料的使用方式</h2>
+<h2>7. 对原有资料的使用方式</h2>
 <p>原有清单可以继续用于寻找场景和关键词，但需要按第 05 分册的勘误解释。尤其要撤回以下外推：所有规则免训练、两代风险算法完整继承、本地可直接用云端测试索引、CIM 映射完成即等于内置检测已经支持、五组件保证不会刷分。</p>
-<p>可交给领导判断的，是不同机制解决什么问题、依赖什么证据、付出什么代价，以及需要哪些实验才能决定。最终系统组织、模型复杂度、告警入口和建设范围不由本报告预先代选。</p></section><section id="part-05"><h1 id="part-05-_1">证据索引与既有资料勘误</h1>
-<h2 id="part-05-1">1. 证据等级与适用范围</h2>
+<p>可交给领导判断的，是不同机制解决什么问题、依赖什么证据、付出什么代价，以及需要哪些实验才能决定。最终系统组织、模型复杂度、告警入口和建设范围不由本报告预先代选。</p>
+</section><section id="part-05"><h1>证据索引与既有资料勘误</h1>
+<h2>1. 证据等级与适用范围</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -1228,8 +1208,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <th>本报告采用方式</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>官方事实</td>
 <td>指定版本的产品帮助、架构说明和字段定义</td>
 <td>支持相应版本的具体机制，不自动外推所有部署</td>
@@ -1254,10 +1233,9 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <td>文档缺失、冲突或需要实例确认</td>
 <td>列明所需材料，不填补具体数字或源码</td>
 </tr>
-</tbody>
-</table></div>
-<p>核验截止日期为 2026-09-10。Web 来源发布者为 Splunk，S25 发布者为 Zeek 项目；产品手册的版本不等同于页面最后修改时间。本次保留了 URL、重定向目标、页面标题和响应状态的机器可读记录，见 <a href="来源核验记录.json">来源核验记录</a>。该记录验证页面可访问性与主题，不代表产品运行测试。</p>
-<h2 id="part-05-2">2. 对既有预研材料的关键修正</h2>
+</tbody></table></div>
+<p>核验截止日期为 2026-09-10。Web 来源发布者为 Splunk，S25 发布者为 Zeek 项目；产品手册的版本不等同于页面最后修改时间。本次保留了 URL、重定向目标、页面标题和响应状态的机器可读记录，见 <a href="%E6%9D%A5%E6%BA%90%E6%A0%B8%E9%AA%8C%E8%AE%B0%E5%BD%95.json">来源核验记录</a>。该记录验证页面可访问性与主题，不代表产品运行测试。</p>
+<h2>2. 对既有预研材料的关键修正</h2>
 <p>原有 00～08 分册作为历史笔记保留。以下修正适用于最终汇报，避免在引用旧笔记时延续不准确概括。</p>
 <div class="table-wrap"><table>
 <thead>
@@ -1267,8 +1245,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <th>依据</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>独立 UBA 风险引擎被 ES 完整继承，两代共享相同评分骨架</td>
 <td>官方公告证明投入转向 ES Premier；不证明算法、状态及架构完整继承</td>
 <td>S07、S12、S16</td>
@@ -1363,127 +1340,92 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <td>关闭、调分、排除和更新基线有不同语义；反馈需独立治理</td>
 <td>S13、S15；工程分析</td>
 </tr>
-</tbody>
-</table></div>
-<h2 id="part-05-3">3. 不作为本次已验证结论的内容</h2>
+</tbody></table></div>
+<h2>3. 不作为本次已验证结论的内容</h2>
 <p>没有运行中的 Splunk 实例证据，因此未确认目标环境兼容性、搜索执行计划、真实 EPS 上限、硬件规模、端到端一致性或检测效果。平台 9.x/10.x 和 ES 8.x 文档分别用于说明机制，不意味着组合已经通过部署验证。</p>
 <p>没有 ES UEBA Content App 内部内容，因此未确认每一条本地检测的 SPL、特征 schema、隐藏抑制逻辑、精确阈值及具体训练方法。示例 SPL 没有在 Splunk 上执行。</p>
 <p>没有专有模型源码及模型产物，因此不对独立 UBA 的全部算法、云端 UEBA 内部栈、ERS 权重、图学习方式或深度学习误报抑制机制做精确还原。</p>
 <p>没有采购报价或当前授权合同，因此不提供价格、授权组合和成本数字。容量分册中的数字仅为明确假设下的算术示例。</p>
-<h2 id="part-05-4">4. 官方来源</h2>
+<h2>4. 官方来源</h2>
 <ol>
-<li>
-<p><strong>S01 · Components and the data pipeline</strong>。Splunk，Platform 9.1，核验于 2026-09-10。用途：采集、解析、索引与搜索组件分工。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">原始页面</a>。</p>
+<li><p><strong>S01 · Components and the data pipeline</strong>。Splunk，Platform 9.1，核验于 2026-09-10。用途：采集、解析、索引与搜索组件分工。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S02 · Index time versus search time</strong>。Splunk，Platform 9.3，核验于 2026-09-10。用途：索引时与搜索时处理边界。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">原始页面</a>。</p>
+<li><p><strong>S02 · Index time versus search time</strong>。Splunk，Platform 9.3，核验于 2026-09-10。用途：索引时与搜索时处理边界。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S03 · How the indexer stores indexes</strong>。Splunk，Platform 9.1，核验于 2026-09-10。用途：rawdata、tsidx、bucket 与存储生命周期。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.1/manage-index-storage/how-the-indexer-stores-indexes">原始页面</a>。</p>
+<li><p><strong>S03 · How the indexer stores indexes</strong>。Splunk，Platform 9.1，核验于 2026-09-10。用途：rawdata、tsidx、bucket 与存储生命周期。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.1/manage-index-storage/how-the-indexer-stores-indexes">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S04 · Types of commands</strong>。Splunk，Cloud Platform 10.2.2510，核验于 2026-09-10。用途：命令类别与分布式执行边界。<a href="https://help.splunk.com/en/splunk-cloud-platform/search/search-manual/10.2.2510/search-overview/types-of-commands">原始页面</a>。</p>
+<li><p><strong>S04 · Types of commands</strong>。Splunk，Cloud Platform 10.2.2510，核验于 2026-09-10。用途：命令类别与分布式执行边界。<a href="https://help.splunk.com/en/splunk-cloud-platform/search/search-manual/10.2.2510/search-overview/types-of-commands">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S05 · Accelerate data models</strong>。Splunk，Platform 10.0，核验于 2026-09-10。用途：数据模型加速及 summariesonly 的完整性边界。<a href="https://help.splunk.com/en/splunk-enterprise/manage-knowledge-objects/knowledge-management-manual/10.0/use-data-summaries-to-accelerate-searches/accelerate-data-models">原始页面</a>。</p>
+<li><p><strong>S05 · Accelerate data models</strong>。Splunk，Platform 10.0，核验于 2026-09-10。用途：数据模型加速及 summariesonly 的完整性边界。<a href="https://help.splunk.com/en/splunk-enterprise/manage-knowledge-objects/knowledge-management-manual/10.0/use-data-summaries-to-accelerate-searches/accelerate-data-models">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S06 · Search factor</strong>。Splunk，Platform 10.4，核验于 2026-09-10。用途：可搜索副本与数据副本区别。<a href="https://help.splunk.com/en/splunk-enterprise/administer/manage-indexers-and-indexer-clusters/10.4/how-indexer-clusters-work/search-factor">原始页面</a>。</p>
+<li><p><strong>S06 · Search factor</strong>。Splunk，Platform 10.4，核验于 2026-09-10。用途：可搜索副本与数据副本区别。<a href="https://help.splunk.com/en/splunk-enterprise/administer/manage-indexers-and-indexer-clusters/10.4/how-indexer-clusters-work/search-factor">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S07 · Splunk announces end-of-sale and end-of-life for standalone Splunk User Behavior Analytics software</strong>。Splunk，UBA 5.4.5 公告，核验于 2026-09-10。用途：独立 UBA 停售、终止支持及 ES Premier 方向。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/release-notes/5.4.5/additional-resources/splunk-announces-end-of-sale-and-end-of-life-for-standalone-splunk-user-behavior-analytics-software">原始页面</a>。</p>
+<li><p><strong>S07 · Splunk announces end-of-sale and end-of-life for standalone Splunk User Behavior Analytics software</strong>。Splunk，UBA 5.4.5 公告，核验于 2026-09-10。用途：独立 UBA 停售、终止支持及 ES Premier 方向。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/release-notes/5.4.5/additional-resources/splunk-announces-end-of-sale-and-end-of-life-for-standalone-splunk-user-behavior-analytics-software">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S08 · User and entity behavior analytics (UEBA) overview in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：特征、基线、偏离与风险的产品职责。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/user-and-entity-behavior-analytics-ueba-overview-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S08 · User and entity behavior analytics (UEBA) overview in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：特征、基线、偏离与风险的产品职责。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/user-and-entity-behavior-analytics-ueba-overview-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S09 · Roles and knowledge objects in UEBA for Splunk Enterprise Security</strong>。Splunk，ES 8.7，核验于 2026-09-10。用途：保存搜索、KV、宏、权限；与 S26 有编辑口径冲突。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S09 · Roles and knowledge objects in UEBA for Splunk Enterprise Security</strong>。Splunk，ES 8.7，核验于 2026-09-10。用途：保存搜索、KV、宏、权限；与 S26 有编辑口径冲突。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-content-app-for-on-premises/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S10 · Auditing UEBA with dashboards in Splunk Enterprise Security</strong>。Splunk，ES 8.6，核验于 2026-09-10。用途：Rare Device 特征、0.002、行为稀有计数、个体基线、诊断。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/auditing-ueba-with-dashboards-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S10 · Auditing UEBA with dashboards in Splunk Enterprise Security</strong>。Splunk，ES 8.6，核验于 2026-09-10。用途：Rare Device 特征、0.002、行为稀有计数、个体基线、诊断。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/auditing-ueba-with-dashboards-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S11 · Required sourcetypes for UEBA detections</strong>。Splunk，ES 8.6，核验于 2026-09-10。用途：云端来源与本地已验证来源/CIM 模型范围。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/required-sourcetypes-for-ueba-detections">原始页面</a>。</p>
+<li><p><strong>S11 · Required sourcetypes for UEBA detections</strong>。Splunk，ES 8.6，核验于 2026-09-10。用途：云端来源与本地已验证来源/CIM 模型范围。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/required-sourcetypes-for-ueba-detections">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S12 · Entity risk scoring in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：ERS 窗口、周期、范围、五组件；未提供完整权重。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/entity-risk-scoring-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S12 · Entity risk scoring in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：ERS 窗口、周期、范围、五组件；未提供完整权重。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/entity-risk-scoring-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S13 · Assign risk using risk modifiers in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：事件检测输出、多实体、零分、threat object、人工调分。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S13 · Assign risk using risk modifiers in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：事件检测输出、多实体、零分、threat object、人工调分。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/assign-risk-using-risk-modifiers-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S14 · Review findings generated by UEBA detections</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：可能最长 30 天产出异常；ba_test 仅云端 UEBA。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/review-findings-generated-by-ueba-detections">原始页面</a>。</p>
+<li><p><strong>S14 · Review findings generated by UEBA detections</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：可能最长 30 天产出异常；ba_test 仅云端 UEBA。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security/review-findings-generated-by-ueba-detections">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S15 · Finding exclusions in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：排除作用于 Risk Data Model，按检测绑定及有效期。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/finding-exclusions-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S15 · Finding exclusions in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：排除作用于 Risk Data Model，按检测绑定及有效期。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/user-and-entity-behavior-analytics/finding-exclusions-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S16 · Splunk UBA deployment architecture</strong>。Splunk，UBA 5.4.0，核验于 2026-09-10。用途：管理、流式、批量角色及公开组件。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/plan-and-scale/5.4.0/plan-and-scale-your-splunk-uba-deployment/splunk-uba-deployment-architecture">原始页面</a>。</p>
+<li><p><strong>S16 · Splunk UBA deployment architecture</strong>。Splunk，UBA 5.4.0，核验于 2026-09-10。用途：管理、流式、批量角色及公开组件。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/plan-and-scale/5.4.0/plan-and-scale-your-splunk-uba-deployment/splunk-uba-deployment-architecture">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S17 · Understand data flow in Splunk UBA</strong>。Splunk，UBA 5.4.5，核验于 2026-09-10。用途：连接器、身份解析、视图、异常到威胁。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">原始页面</a>。</p>
+<li><p><strong>S17 · Understand data flow in Splunk UBA</strong>。Splunk，UBA 5.4.5，核验于 2026-09-10。用途：连接器、身份解析、视图、异常到威胁。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/get-data-in/5.4.5/introduction/understand-data-flow-in-splunk-uba">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S18 · Splunk UBA models overview</strong>。Splunk，UBA 5.4.0，核验于 2026-09-10。用途：模型类型、聚合、同伴组、批量威胁模型。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/splunk-uba-models-overview">原始页面</a>。</p>
+<li><p><strong>S18 · Splunk UBA models overview</strong>。Splunk，UBA 5.4.0，核验于 2026-09-10。用途：模型类型、聚合、同伴组、批量威胁模型。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/splunk-uba-models-overview">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S19 · Review Peer Groups in Splunk UBA</strong>。Splunk，UBA 5.3.0（补充机制证据），核验于 2026-09-10。用途：同伴组数据条件、更新周期及类别。<a href="https://help.splunk.com/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.3.0/assess-security-posture/review-peer-groups-in-splunk-uba">原始页面</a>。</p>
+<li><p><strong>S19 · Review Peer Groups in Splunk UBA</strong>。Splunk，UBA 5.3.0（补充机制证据），核验于 2026-09-10。用途：同伴组数据条件、更新周期及类别。<a href="https://help.splunk.com/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.3.0/assess-security-posture/review-peer-groups-in-splunk-uba">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S20 · Lateral Movement model</strong>。Splunk，UBA 5.4.0，核验于 2026-09-10。用途：模型输入、默认 30 天活动、同伴比较与调查。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/lateral-movement-model">原始页面</a>。</p>
+<li><p><strong>S20 · Lateral Movement model</strong>。Splunk，UBA 5.4.0，核验于 2026-09-10。用途：模型输入、默认 30 天活动、同伴比较与调查。<a href="https://help.splunk.com/en/security-offerings/splunk-user-behavior-analytics/use-splunk-user-behavior-analytics/5.4.0/splunk-uba-models/lateral-movement-model">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S21 · Adjusting risk using risk factors in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：先加后乘、上下文因子与数据模型动态评分。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/adjusting-risk-using-risk-factors-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S21 · Adjusting risk using risk factors in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：先加后乘、上下文因子与数据模型动态评分。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/adjusting-risk-using-risk-factors-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S22 · Review findings using the threat topology visualization in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：共享威胁对象关系展示；不等于图模型算法。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/review-findings-using-the-threat-topology-visualization-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S22 · Review findings using the threat topology visualization in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：共享威胁对象关系展示；不等于图模型算法。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/review-findings-using-the-threat-topology-visualization-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S23 · About the fit and apply commands</strong>。Splunk，MLTK / AI Toolkit 文档 5.6.0，核验于 2026-09-10。用途：训练与应用模型；工具能力不代表 UEBA 内部实现。<a href="https://help.splunk.com/en/splunk-cloud-platform/apply-machine-learning/use-ai-toolkit/5.6.0/mltk-commands-macros-and-visualizations/about-the-fit-and-apply-commands">原始页面</a>。</p>
+<li><p><strong>S23 · About the fit and apply commands</strong>。Splunk，MLTK / AI Toolkit 文档 5.6.0，核验于 2026-09-10。用途：训练与应用模型；工具能力不代表 UEBA 内部实现。<a href="https://help.splunk.com/en/splunk-cloud-platform/apply-machine-learning/use-ai-toolkit/5.6.0/mltk-commands-macros-and-visualizations/about-the-fit-and-apply-commands">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S24 · Search head clustering architecture</strong>。Splunk，Platform 9.0，核验于 2026-09-10。用途：搜索头集群与 captain 协调。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-search/9.0/overview-of-search-head-clustering/search-head-clustering-architecture">原始页面</a>。</p>
+<li><p><strong>S24 · Search head clustering architecture</strong>。Splunk，Platform 9.0，核验于 2026-09-10。用途：搜索头集群与 captain 协调。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-search/9.0/overview-of-search-head-clustering/search-head-clustering-architecture">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S25 · base/protocols/conn/main.zeek — Conn::Info</strong>。Zeek 项目，Zeek current；以核验页面为准，核验于 2026-09-10。用途：orig_bytes 与 orig_ip_bytes 等字段定义。<a href="https://docs.zeek.org/en/current/scripts/base/protocols/conn/main.zeek.html">原始页面</a>。</p>
+<li><p><strong>S25 · base/protocols/conn/main.zeek — Conn::Info</strong>。Zeek 项目，Zeek current；以核验页面为准，核验于 2026-09-10。用途：orig_bytes 与 orig_ip_bytes 等字段定义。<a href="https://docs.zeek.org/en/current/scripts/base/protocols/conn/main.zeek.html">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S26 · UEBA detections in Splunk Enterprise Security</strong>。Splunk，ES 8.7，核验于 2026-09-10。用途：不可修改底层逻辑的描述，以及不支持 entity zones。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S26 · UEBA detections in Splunk Enterprise Security</strong>。Splunk，ES 8.7，核验于 2026-09-10。用途：不可修改底层逻辑的描述，以及不支持 entity zones。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.7/user-and-entity-behavior-analytics/ueba-detections-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
-<li>
-<p><strong>S27 · Using entity risk scores for detections in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：利用 ers 结果再进行检测。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/using-entity-risk-scores-for-detections-in-splunk-enterprise-security">原始页面</a>。</p>
+<li><p><strong>S27 · Using entity risk scores for detections in Splunk Enterprise Security</strong>。Splunk，ES 8.5，核验于 2026-09-10。用途：利用 ers 结果再进行检测。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.5/risk-based-alerting/using-entity-risk-scores-for-detections-in-splunk-enterprise-security">原始页面</a>。</p>
 </li>
 </ol>
-<h2 id="part-05-5">5. 本地文件证据</h2>
+<h2>5. 本地文件证据</h2>
 <ul>
-<li>
-<p><strong>L01</strong>：<a href="../Splunk_TA_zeek/default/props.conf"> Corelight Zeek props.conf </a>。1.0.11；第 3–41 行含 TSV、地址、字节及方向配置。本地读取，未验证安装运行。SHA-256：<code>cbd16cbd8a26f2b9c7092c5d0a0eaf279b35e704d64e3ac7853d5d99407eb87c</code>。</p>
+<li><p><strong>L01</strong>：<a href="../Splunk_TA_zeek/default/props.conf"> Corelight Zeek props.conf </a>。1.0.11；第 3–41 行含 TSV、地址、字节及方向配置。本地读取，未验证安装运行。SHA-256：<code>cbd16cbd8a26f2b9c7092c5d0a0eaf279b35e704d64e3ac7853d5d99407eb87c</code>。</p>
 </li>
-<li>
-<p><strong>L02</strong>：<a href="../Splunk_TA_zeek/default/eventtypes.conf"> Corelight Zeek eventtypes.conf </a>。zeek_network_traffic 条目。本地读取，未验证安装运行。SHA-256：<code>eb002e1753daea72e288137b981045b09d9973ed1ef5afba8960a84ed08f1b01</code>。</p>
+<li><p><strong>L02</strong>：<a href="../Splunk_TA_zeek/default/eventtypes.conf"> Corelight Zeek eventtypes.conf </a>。zeek_network_traffic 条目。本地读取，未验证安装运行。SHA-256：<code>eb002e1753daea72e288137b981045b09d9973ed1ef5afba8960a84ed08f1b01</code>。</p>
 </li>
-<li>
-<p><strong>L03</strong>：<a href="../Splunk_TA_zeek/default/tags.conf"> Corelight Zeek tags.conf </a>。network 与 communicate 标签。本地读取，未验证安装运行。SHA-256：<code>b2a6ac33ceba1b970f6bd572986cc753dd53207adabd0298eef8931f36d8da81</code>。</p>
+<li><p><strong>L03</strong>：<a href="../Splunk_TA_zeek/default/tags.conf"> Corelight Zeek tags.conf </a>。network 与 communicate 标签。本地读取，未验证安装运行。SHA-256：<code>b2a6ac33ceba1b970f6bd572986cc753dd53207adabd0298eef8931f36d8da81</code>。</p>
 </li>
-<li>
-<p><strong>L04</strong>：<a href="../Splunk_SA_CIM/default/data/models/Network_Traffic.json"> CIM Network_Traffic.json </a>。CIM 8.7.0；对象约束、字段及字节计算。本地读取，未验证安装运行。SHA-256：<code>1baf8c3f557de98b985855cb62fb4988b3b711238f18f7a5485bbe0c2aa7d680</code>。</p>
+<li><p><strong>L04</strong>：<a href="../Splunk_SA_CIM/default/data/models/Network_Traffic.json"> CIM Network_Traffic.json </a>。CIM 8.7.0；对象约束、字段及字节计算。本地读取，未验证安装运行。SHA-256：<code>1baf8c3f557de98b985855cb62fb4988b3b711238f18f7a5485bbe0c2aa7d680</code>。</p>
 </li>
-<li>
-<p><strong>L05</strong>：<a href="../Splunk_TA_zeek/default/app.conf"> Corelight Zeek app.conf </a>。插件名称与 1.0.11 版本。本地读取，未验证安装运行。SHA-256：<code>59bb63af795304cd93073a060367ced516e3cead99caf3f49d522eb8de6162b1</code>。</p>
+<li><p><strong>L05</strong>：<a href="../Splunk_TA_zeek/default/app.conf"> Corelight Zeek app.conf </a>。插件名称与 1.0.11 版本。本地读取，未验证安装运行。SHA-256：<code>59bb63af795304cd93073a060367ced516e3cead99caf3f49d522eb8de6162b1</code>。</p>
 </li>
-<li>
-<p><strong>L06</strong>：<a href="../Splunk_SA_CIM/default/app.conf"> CIM app.conf </a>。CIM 8.7.0 版本。本地读取，未验证安装运行。SHA-256：<code>43b615c2efd45df722f5ae34d42623a9a97063bac964ab9edbbb770d038ee7f7</code>。</p>
+<li><p><strong>L06</strong>：<a href="../Splunk_SA_CIM/default/app.conf"> CIM app.conf </a>。CIM 8.7.0 版本。本地读取，未验证安装运行。SHA-256：<code>43b615c2efd45df722f5ae34d42623a9a97063bac964ab9edbbb770d038ee7f7</code>。</p>
 </li>
-<li>
-<p><strong>L07</strong>：<a href="../../UEBA 异常检测实现设计.md"> UEBA 异常检测实现设计 </a>。现有自研设计上下文，不作为 Splunk 产品事实。本地读取，未验证安装运行。SHA-256：<code>eca7e30e66d41f5f79e7d83a7b60dcd5faf07d755dd8fde5389486c76820f671</code>。</p>
+<li><p><strong>L07</strong>：<a href="../../UEBA%20%E5%BC%82%E5%B8%B8%E6%A3%80%E6%B5%8B%E5%AE%9E%E7%8E%B0%E8%AE%BE%E8%AE%A1.md"> UEBA 异常检测实现设计 </a>。现有自研设计上下文，不作为 Splunk 产品事实。本地读取，未验证安装运行。SHA-256：<code>eca7e30e66d41f5f79e7d83a7b60dcd5faf07d755dd8fde5389486c76820f671</code>。</p>
 </li>
-<li>
-<p><strong>L08</strong>：<a href="../../网络流量与UEBA异常行为检测清单.md"> 网络流量与 UEBA 异常行为检测清单 </a>。现有场景范围，不作为 Splunk 产品事实。本地读取，未验证安装运行。SHA-256：<code>3b16932257e9927c022211009ca613d02cba5784bc634ff65e26b5e87ae39011</code>。</p>
+<li><p><strong>L08</strong>：<a href="../../%E7%BD%91%E7%BB%9C%E6%B5%81%E9%87%8F%E4%B8%8EUEBA%E5%BC%82%E5%B8%B8%E8%A1%8C%E4%B8%BA%E6%A3%80%E6%B5%8B%E6%B8%85%E5%8D%95.md"> 网络流量与 UEBA 异常行为检测清单 </a>。现有场景范围，不作为 Splunk 产品事实。本地读取，未验证安装运行。SHA-256：<code>3b16932257e9927c022211009ca613d02cba5784bc634ff65e26b5e87ae39011</code>。</p>
 </li>
 </ul>
-<h2 id="part-05-6">6. 对关键结论的复核顺序</h2>
-<p>若只抽查少量证据，先阅读 S07 确认产品边界，再读 S09/S26 检查编辑权限冲突，读 S12 核实 ERS 公开深度，读 S14 确认本地与云端测试差异，最后检查 L01 与 S25 的实际字节映射。它们分别约束产品路线、可定制性、评分复现、部署能力和特征语义五个容易误判的问题。</p></section><section id="part-06"><h1 id="part-06-windows-ad-zeek">Windows AD 与 Zeek 日志采集机制对比</h1>
-<h2 id="part-06-1">1. 结论先行</h2>
+<h2>6. 对关键结论的复核顺序</h2>
+<p>若只抽查少量证据，先阅读 S07 确认产品边界，再读 S09/S26 检查编辑权限冲突，读 S12 核实 ERS 公开深度，读 S14 确认本地与云端测试差异，最后检查 L01 与 S25 的实际字节映射。它们分别约束产品路线、可定制性、评分复现、部署能力和特征语义五个容易误判的问题。</p>
+</section><section id="part-06"><h1>Windows AD 与 Zeek 日志采集机制对比</h1>
+<h2>1. 结论先行</h2>
 <p>采集 Windows AD 日志时，Splunk Universal Forwarder（UF）通常部署在域控制器或 Windows Event Collector（WEC）服务器上。UF 通过 Windows Event Log 输入订阅事件日志通道，读取新产生的事件，保存采集检查点，再将事件发送到 Splunk Indexer。</p>
 <p>这与 Zeek 采集的核心差异是：</p>
 <ul>
@@ -1492,7 +1434,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <li>两者后续都会添加 <code>host</code>、<code>source</code>、<code>sourcetype</code> 等元数据，经 <code>outputs.conf</code> 发往 Indexer，再由对应 Add-on 完成字段标准化和 CIM 映射；</li>
 <li>AD 事件日志、AD 目录对象变化和 AD 健康状态是三类不同数据，不能只启用 Security 日志后就认为已采全 AD 数据。</li>
 </ul>
-<h2 id="part-06-2-windows-ad">2. Windows AD 有哪些不同的数据来源</h2>
+<h2>2. Windows AD 有哪些不同的数据来源</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -1502,8 +1444,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <th>主要用途</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>Security 事件日志</td>
 <td>登录、注销、账号创建、组成员变化、权限使用、目录对象访问</td>
 <td><code>WinEventLog://Security</code></td>
@@ -1545,10 +1486,9 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <td><code>monitor://</code> 或专用输入</td>
 <td>补充基础设施上下文</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>Security 日志记录的是“发生过什么审计事件”。<code>admon://</code> 面向目录对象状态和变化。二者可以互补，但数据语义、权限和采集机制不同。</p>
-<h2 id="part-06-3-uf">3. 直接在域控制器安装 UF 时如何工作</h2>
+<h2>3. 直接在域控制器安装 UF 时如何工作</h2>
 <pre><code class="language-text">域用户、计算机及攻击者操作
               │
               ▼
@@ -1570,7 +1510,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
  Search Head / ES / UEBA
    CIM → 检测 → 风险 → 调查
 </code></pre>
-<h3 id="part-06-31-windows">3.1 Windows 先负责产生事件</h3>
+<h3>3.1 Windows 先负责产生事件</h3>
 <p>UF 不会自动让 Windows 生成所有安全事件。域控制器必须启用相应的高级审核策略；部分目录访问事件还依赖对象上的 SACL。若 Windows 没有生成某类事件，Forwarder 无法补出该事件。</p>
 <p>例如，UEBA 常用事件可能包括：</p>
 <div class="table-wrap"><table>
@@ -1580,8 +1520,7 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <th>常见事件 ID 示例</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>登录成功、失败、注销</td>
 <td>4624、4625、4634</td>
 </tr>
@@ -1617,10 +1556,9 @@ E5 09:40  TLS metadata: sensor=Z01, uid=C001,
 <td>安全审计日志被清除</td>
 <td>1102</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>事件 ID 只能说明事件类别，具体行为还要结合 Subject、Target、Logon ID、源地址、工作站、组 SID、对象 DN 和结果字段解释。不同 Windows 版本、审计策略和事件提供程序会影响实际字段。</p>
-<h3 id="part-06-32-uf">3.2 UF 订阅事件日志通道</h3>
+<h3>3.2 UF 订阅事件日志通道</h3>
 <p>本地 <code>Splunk_TA_windows</code> 11.0.2 的默认配置包含以下模板，但默认均为关闭状态；实际修改应放在 <code>local/inputs.conf</code>，不直接编辑 <code>default/inputs.conf</code>。<a href="../Splunk_TA_windows/default/inputs.conf">本地 inputs.conf</a></p>
 <pre><code class="language-ini">[WinEventLog://Security]
 disabled = 0
@@ -1640,8 +1578,7 @@ index = wineventlog
 <th>需要注意</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>disabled=0</code></td>
 <td>启用输入</td>
 <td>TA 默认模板通常是 <code>1</code>，安装 TA 不等于已经采集</td>
@@ -1676,10 +1613,9 @@ index = wineventlog
 <td>指定目标索引</td>
 <td>Indexer 必须预先存在该索引及权限配置</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>Splunk 官方说明 <code>WinEventLog</code> 输入针对本地 Windows 系统。采集远端事件更常见的做法是在目标主机部署 UF，或者先由 WEF 汇总到 WEC，再在 WEC 上部署 UF。<a href="https://help.splunk.com/en/splunk-enterprise/get-data-in/get-started-with-getting-data-in/9.3/get-windows-data/monitor-windows-event-log-data-with-splunk-enterprise">Windows Event Log 官方说明</a></p>
-<h3 id="part-06-33">3.3 检查点与重启恢复</h3>
+<h3>3.3 检查点与重启恢复</h3>
 <p>UF 保存每个事件日志输入的读取状态。正常重启后，它依据检查点继续读取，而不是无条件从 <code>start_from=oldest</code> 重新发送所有事件。<code>start_from</code> 主要影响没有有效检查点时的初始位置。</p>
 <p>这不等于端到端业务层面绝对不重不丢。仍需考虑：</p>
 <ul>
@@ -1690,7 +1626,7 @@ index = wineventlog
 <li>管理员清空日志、事件通道损坏或检查点被删除的情况。</li>
 </ul>
 <p>繁忙域控制器首次从 oldest 回补可能造成采集积压。Splunk 官方故障排查建议根据需要仅采近期日志、从 newest 开始，或减少采集事件范围，但这些选择会改变历史完整性，必须在上线方案中明确。<a href="https://help.splunk.com/en/splunk-enterprise/administer/troubleshoot/9.3/data-acquisition-problems/event-indexing-delay">事件索引延迟说明</a></p>
-<h3 id="part-06-34-uf">3.4 UF 添加元数据并转发</h3>
+<h3>3.4 UF 添加元数据并转发</h3>
 <p><code>outputs.conf</code> 的工作方式与 Zeek 主机上的 UF 相同：定义一个或多个接收端，由 UF 将采集到的事件发送给 Indexer 或中间 Forwarder。</p>
 <pre><code class="language-ini">[tcpout]
 defaultGroup = splunk_indexers
@@ -1707,7 +1643,7 @@ sourcetype = WinEventLog:Security 或 XmlWinEventLog:Security
 index      = wineventlog（示例）
 </code></pre>
 <p>使用 WEF 时要额外保证 <code>host</code> 最终表示事件原始主机，而不是全部显示为 WEC 收集器。当前 TA-Windows 为 ForwardedEvents 配置了主机覆盖逻辑。<a href="../Splunk_TA_windows/default/props.conf">本地 props.conf</a></p>
-<h3 id="part-06-35-indexer-search-head">3.5 Indexer 和 Search Head 如何处理</h3>
+<h3>3.5 Indexer 和 Search Head 如何处理</h3>
 <p>当前本地 TA-Windows 对 XML Windows 事件配置了 XML 字段提取，并把不同来源归一到兼容的 <code>XmlWinEventLog:*</code> / <code>WinEventLog:*</code> sourcetype。部分高基数字段可以调整为搜索时提取，以权衡索引空间与查询成本。<a href="../Splunk_TA_windows/default/props.conf">本地 props.conf</a></p>
 <p>典型字段随后被映射到 CIM：</p>
 <pre><code class="language-text">SubjectUserName / TargetUserName → user、src_user 或目标账号字段
@@ -1718,7 +1654,7 @@ NewProcessName                   → process_name
 TargetSid / MemberSid            → 用户或组标识
 </code></pre>
 <p>具体映射随 EventCode 和 TA 版本变化，不能仅根据字段名称统一套用。Authentication、Change、Endpoint 等 CIM 数据模型会消费这些标准字段，供 ES 和 UEBA 检测使用。</p>
-<h2 id="part-06-4-wef">4. WEF 集中采集模式如何工作</h2>
+<h2>4. WEF 集中采集模式如何工作</h2>
 <pre><code class="language-text">DC1 ─┐
 DC2 ─┼─ Windows Event Forwarding ─→ WEC / ForwardedEvents
 DC3 ─┘                                   │
@@ -1746,8 +1682,7 @@ index = wineventlog
 <th>WEF/WEC 集中后部署 UF</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>少一层 Windows 转发链路，问题定位直接</td>
 <td>端点侧代理数量较少，Windows 可集中控制订阅</td>
 </tr>
@@ -1767,10 +1702,9 @@ index = wineventlog
 <td>域控上有额外采集进程与开销</td>
 <td>WEF 本身仍在每台源主机运行并传输事件</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>二者没有脱离约束的绝对优劣。选择前应实测事件量、域控负载、允许安装代理的范围、网络隔离、WEC 高可用和故障恢复时间。</p>
-<h2 id="part-06-5-ad-monitor-security">5. AD Monitor 不是 Security 日志输入</h2>
+<h2>5. AD Monitor 不是 Security 日志输入</h2>
 <p>如果 UEBA 需要完整的用户、组、计算机属性和对象变化，可以单独配置 AD Monitor：</p>
 <pre><code class="language-ini">[admon://domain_directory]
 disabled = 0
@@ -1784,8 +1718,7 @@ targetDc = dc01.example.com
 <th>AD Monitor</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>审计事件流</td>
 <td>目录对象状态与变化</td>
 </tr>
@@ -1801,10 +1734,9 @@ targetDc = dc01.example.com
 <td>可用于行为序列和安全检测</td>
 <td>可用于身份画像、组关系及富化</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>实际部署仍要验证 AD Monitor 是否满足所需历史语义。用当前目录快照富化过去事件，可能把今天的部门或权限错误地套到过去。自研 UEBA 应对重要身份属性保存有效时间。</p>
-<h2 id="part-06-6-windows-ad-zeek">6. Windows AD 与 Zeek 的完整对比</h2>
+<h2>6. Windows AD 与 Zeek 的完整对比</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -1813,8 +1745,7 @@ targetDc = dc01.example.com
 <th>Zeek 日志</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>原始数据来源</td>
 <td>Windows Event Log、AD 目录、脚本或服务日志</td>
 <td>SPAN/TAP 流量经 Zeek 协议分析生成日志</td>
@@ -1889,8 +1820,7 @@ targetDc = dc01.example.com
 <td>oldest 回补压垮繁忙 DC、审核策略缺失</td>
 <td>大量历史文件重复采集、日志头和轮转处理错误</td>
 </tr>
-</tbody>
-</table></div>
+</tbody></table></div>
 <p>二者结合后，可以形成更可靠的链路：</p>
 <pre><code class="language-text">AD 4624：账号 A 在设备 D 登录
         +
@@ -1903,7 +1833,7 @@ Zeek：设备 D 向新目的地发送异常数据量
 行为异常信号 → 风险聚合 → 疑似外泄调查
 </code></pre>
 <p>关联成立不代表已经证明文件内容被外泄。若要回答“哪些文件”，还需要文件审计、EDR、代理上传或 DLP 等证据。</p>
-<h2 id="part-06-7">7. 推荐的配置分层</h2>
+<h2>7. 推荐的配置分层</h2>
 <pre><code class="language-text">域控制器或 WEC 上的 UF
 ├── Splunk_TA_windows/default：厂商默认配置，不修改
 ├── Splunk_TA_windows/local/inputs.conf：启用通道、过滤和目标索引
@@ -1922,7 +1852,7 @@ Search Head / ES
 └── 检测、风险和调查内容
 </code></pre>
 <p>在多个层次安装 TA 的目的不同：采集端需要输入定义，解析端需要索引时配置，搜索端需要字段、事件类型、标签和 lookup。不能笼统地说“TA 只装在 UF”或“只装在 Search Head”。</p>
-<h2 id="part-06-8">8. 上线验证清单</h2>
+<h2>8. 上线验证清单</h2>
 <ol>
 <li>在 Windows 事件查看器确认目标事件确实产生，再检查 Splunk；不要先把没有事件归因于 UF。</li>
 <li>检查每台 DC 或每个 WEF Subscription 的事件量、最后事件时间和延迟。</li>
@@ -1935,7 +1865,7 @@ Search Head / ES
 <li>对 4624/4625、4720～4729、4756/4757、4662、4688、1102 等实际需要的事件建立覆盖率监控。</li>
 <li>记录输入配置版本、检查点状态、最后成功事件时间和数据缺口，供 UEBA 判断“零行为”还是“未采到”。</li>
 </ol>
-<h2 id="part-06-9">9. 主要证据</h2>
+<h2>9. 主要证据</h2>
 <ul>
 <li>Splunk，<a href="https://help.splunk.com/en/splunk-enterprise/get-data-in/get-started-with-getting-data-in/9.3/get-windows-data/monitor-windows-event-log-data-with-splunk-enterprise">Monitor Windows event log data with Splunk Enterprise</a>，Windows Event Log 输入与运行权限。</li>
 <li>Splunk，<a href="https://help.splunk.com/en/splunk-cloud-platform/administer/admin-manual/10.4.2604/get-data-into-splunk-cloud-platform/get-windows-data-into-splunk-cloud-platform">Get Windows Data into Splunk Cloud Platform</a>，TA-Windows、Security 输入和 XML 示例。</li>
@@ -1943,4 +1873,2211 @@ Search Head / ES
 <li>Splunk，<a href="https://help.splunk.com/en/splunk-enterprise/get-started/get-data-in/9.0/get-windows-data/monitor-active-directory">Monitor Active Directory</a>，AD Monitor 部署条件。</li>
 <li>本地 <a href="../Splunk_TA_windows/default/inputs.conf">TA-Windows inputs.conf</a> 与 <a href="../Splunk_TA_windows/default/props.conf">props.conf</a>，版本见 <a href="../Splunk_TA_windows/default/app.conf">app.conf</a>。</li>
 <li>本报告的 <a href="#part-02">Splunk 数据平台与工程机制</a>，用于理解 Forwarder、Indexer、Search Head 与 CIM 的共同处理层次。</li>
-</ul></section><footer>本报告提供机制解释与证据边界，最终自研路线由决策者确定。来源详情见证据索引。</footer></main></body></html>
+</ul>
+</section><section id="part-07"><h1>Splunk Indexer 开源替代方案预研</h1>
+<h2>1. 结论摘要</h2>
+<p>【结论】Splunk Indexer 可以被开源产品组合替代，但不能把它理解成可以单独更换的通用存储。Indexer 同时承担数据接收后的解析与索引、压缩原文和索引文件的持久化、副本管理，以及执行 Search Head 下发的分布式搜索。因此，替换 Indexer 通常意味着同步迁移查询语言、仪表盘、告警规则、数据模型、字段提取和部分采集链路，而不是在 Splunk Search Head 下方换一个数据库。</p>
+<p>对本项目的建议分两层：</p>
+<ol>
+<li>**近期检索与安全调查使用 OpenSearch。**它与 Splunk 的字段检索、全文搜索、仪表盘、规则检测和告警形态最接近，迁移风险相对可控。</li>
+<li>**长期明细、行为画像与高基数聚合使用 ClickHouse。**它更适合 UEBA 的实体窗口统计、基线、特征计算和长周期数据分析。</li>
+<li><strong>Kafka 作为可回放的数据缓冲，Vector、Fluent Bit 或 OpenTelemetry Collector 负责采集，Data Prepper 或流处理任务负责解析和标准化；S3 兼容对象存储保留原始归档和备份。</strong></li>
+</ol>
+<p>推荐目标不是复制一个开源版 Splunk，而是让搜索引擎负责“找事件”，列式分析引擎负责“算行为”，对象存储负责低成本保留原始证据。</p>
+<h2>2. 为什么不能只替换 Indexer 的磁盘</h2>
+<p>【事实】Splunk 将索引数据组织成 bucket。bucket 中包含压缩原始数据、指向原始数据的索引文件和元数据；Indexer Cluster 按 bucket 复制，Search Head 把查询分发到作为 Search Peer 的 Indexer，并汇总结果。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.0/how-indexer-clusters-work/buckets-and-indexer-clusters">1</a><a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.4/overview-of-indexer-clusters-and-index-replication/the-basics-of-indexer-cluster-architecture">2</a><a href="https://help.splunk.com/en/splunk-enterprise/get-started/deployment-capacity-manual/9.1/hardware-capacity-planning/components-of-a-splunk-enterprise-deployment">3</a></p>
+<p>【事实】Splunk 的常规分布式搜索要求 Search Head 连接 Splunk Indexer/Search Peer。Splunk 官方对 Federated Search for Splunk 的说明明确指出，它只面向远端 Splunk 部署，不支持把任意第三方系统作为该类 Provider。<a href="https://help.splunk.com/?resourceId=Platform_FederatedSearch_fsoptions">4</a></p>
+<p>【解释】这意味着以下设想不可作为受支持的替换路径：</p>
+<pre><code class="language-text">Splunk Search Head → OpenSearch / ClickHouse → 原样运行现有 SPL
+</code></pre>
+<p>Splunk Cloud 提供面向 S3 等外部数据的特定联邦查询能力，但它有产品版本、部署区域、数据格式和使用场景限制。官方说明 S3 联邦查询主要面向低频历史数据，不应替代高频或实时的原生索引搜索。<a href="https://help.splunk.com/en/splunk-enterprise/splunk-validated-architectures/splunk-platform-indexing-and-search/federated-search-for-amazon-s3">5</a></p>
+<p>因此需要替换的是一组能力，而非一个文件格式：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Splunk 能力</th>
+<th>替代层需要提供的能力</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Forwarder/输入</td>
+<td>文件、Windows 事件、Syslog、API、OTLP 等采集及断点续传</td>
+</tr>
+<tr>
+<td>Indexer 解析</td>
+<td>事件切分、时间解析、过滤、字段标准化、富化与脱敏</td>
+</tr>
+<tr>
+<td>Indexer 存储与索引</td>
+<td>原文保存、字段/全文检索、分区、副本、恢复和生命周期</td>
+</tr>
+<tr>
+<td>Search Peer 执行</td>
+<td>分布式过滤、聚合、关联、排序和结果返回</td>
+</tr>
+<tr>
+<td>Search Head 与知识对象</td>
+<td>查询入口、仪表盘、保存查询、告警、权限和检测内容</td>
+</tr>
+<tr>
+<td>CIM、摘要与行为状态</td>
+<td>统一语义、可复用宽表/摘要、实体特征及基线状态</td>
+</tr>
+</tbody></table></div>
+<h2>3. 候选方案比较</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>方案</th>
+<th align="right">与 Splunk 检索体验接近度</th>
+<th align="right">长期存储成本</th>
+<th align="right">全文与任意字段检索</th>
+<th align="right">UEBA 聚合计算</th>
+<th align="right">安全分析现成功能</th>
+<th>主要风险</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OpenSearch 全栈</td>
+<td align="right">高</td>
+<td align="right">中等偏高</td>
+<td align="right">强</td>
+<td align="right">中等</td>
+<td align="right">较强</td>
+<td>分片、映射、JVM 和容量治理</td>
+</tr>
+<tr>
+<td>ClickHouse + ClickStack</td>
+<td align="right">中</td>
+<td align="right">低</td>
+<td align="right">中等</td>
+<td align="right">强</td>
+<td align="right">中等偏弱</td>
+<td>Schema 设计及安全内容需建设</td>
+</tr>
+<tr>
+<td>OpenSearch + ClickHouse</td>
+<td align="right">高</td>
+<td align="right">中等</td>
+<td align="right">强</td>
+<td align="right">强</td>
+<td align="right">较强</td>
+<td>双写、一致性和运维复杂度</td>
+</tr>
+<tr>
+<td>Loki + Grafana</td>
+<td align="right">较低</td>
+<td align="right">很低</td>
+<td align="right">偏弱</td>
+<td align="right">偏弱</td>
+<td align="right">较弱</td>
+<td>标签索引不适合任意安全字段检索</td>
+</tr>
+<tr>
+<td>Quickwit + 对象存储</td>
+<td align="right">中</td>
+<td align="right">很低</td>
+<td align="right">强</td>
+<td align="right">中等</td>
+<td align="right">较弱</td>
+<td>生态、运营工具和项目成熟度需验证</td>
+</tr>
+</tbody></table></div>
+<p>表中的判断是基于各项目公开架构的工程比较，不是同一硬件、同一数据集上的性能测试。最终成本与性能必须用本项目日志、查询和保留周期实测。</p>
+<h2>4. 方案一：OpenSearch 全栈</h2>
+<p>建议组合：</p>
+<pre><code class="language-text">日志源
+  → Vector / Fluent Bit / OpenTelemetry Collector
+  → Kafka
+  → OpenSearch Data Prepper
+  → OpenSearch Cluster
+  → OpenSearch Dashboards / Security Analytics / Alerting
+  → S3、MinIO 或 Ceph RGW 快照仓库
+</code></pre>
+<p>【事实】OpenSearch 将 Data Prepper 定义为首选数据摄取工具。Data Prepper 可以通过流水线执行过滤、丰富、转换、标准化和聚合，官方列出的常见用途包括日志分析。<a href="https://docs.opensearch.org/latest/data-prepper/">6</a></p>
+<p>【事实】OpenSearch Index State Management 可以根据索引年龄、大小或文档数执行 rollover、只读、force merge、调整副本和删除等生命周期操作。<a href="https://docs.opensearch.org/latest/im-plugin/ism/index/">7</a></p>
+<p>【事实】OpenSearch Security Analytics 提供 Detector、基于 Sigma 的检测规则、Finding、Alert 和跨日志类型的关联规则；OpenSearch Security 还能对相关功能及索引应用角色、文档级和字段级访问控制。<a href="https://docs.opensearch.org/latest/security-analytics/">8</a><a href="https://docs.opensearch.org/latest/security-analytics/security/">9</a></p>
+<h3>4.1 与 Splunk 的主要映射</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Splunk</th>
+<th>OpenSearch 组合</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Universal/Heavy Forwarder</td>
+<td>Vector、Fluent Bit、OTel Collector、Data Prepper</td>
+</tr>
+<tr>
+<td>Indexer</td>
+<td>OpenSearch Data Node</td>
+</tr>
+<tr>
+<td>Indexer Cluster</td>
+<td>OpenSearch Cluster</td>
+</tr>
+<tr>
+<td><code>indexes.conf</code> 生命周期</td>
+<td>Index Template、Data Stream、ISM</td>
+</tr>
+<tr>
+<td>Search Head</td>
+<td>OpenSearch Dashboards 与协调节点</td>
+</tr>
+<tr>
+<td>SPL</td>
+<td>Query DSL、PPL、SQL；需重写和语义验证</td>
+</tr>
+<tr>
+<td>ES 检测及告警</td>
+<td>Security Analytics、Sigma、Alerting</td>
+</tr>
+<tr>
+<td>冷备和恢复</td>
+<td>Snapshot Repository；不能未经验证等同于 Splunk SmartStore</td>
+</tr>
+</tbody></table></div>
+<h3>4.2 适用条件与边界</h3>
+<p>适合近期原始事件检索、SOC 交互调查、关键词搜索、字段过滤和规则检测。它是最接近 Splunk 平台形态的开源路线，但仍需承担倒排索引的磁盘、内存和写放大成本。高字段数、高基数和不受控动态映射会造成集群压力，不能依赖默认配置直接承载生产 UEBA。</p>
+<p>OpenSearch 能降低软件许可依赖，但不会自动降低运维成本。生产设计仍需明确分片大小、主副本、故障域、映射模板、写入背压、快照恢复目标、滚动升级和租户隔离。</p>
+<h3>4.3 是否推荐 Elasticsearch（ES）</h3>
+<p>【结论】推荐 Elasticsearch 作为候选的<strong>近期检索与安全调查引擎</strong>，但不建议把它作为整个 UEBA 平台唯一的长期存储和计算引擎。本项目以开源替代和自主可控为主要前提时，OpenSearch 的推荐优先级高于 Elasticsearch；如果组织已经具备 Elastic 技术栈、运维经验并能接受相应订阅，则 Elasticsearch 也是成熟备选。</p>
+<p>需要区分两个产品：本文前述推荐的 OpenSearch 不是 Elasticsearch 的简称。二者均能承担日志索引、字段检索、聚合和仪表盘，但项目治理、插件、安全功能和许可证边界已经不同，不能把配置及功能清单直接视为完全兼容。</p>
+<p>【事实】Elastic 官方提供 hot、warm、cold、frozen 数据层，支持使用生命周期策略在不同层之间管理时序数据；cold 和 frozen 层可以利用 searchable snapshots 降低本地磁盘占用，但 frozen 查询通常比 cold 更慢。<a href="https://www.elastic.co/docs/manage-data/lifecycle/data-tiers">15</a></p>
+<p>【事实】Elastic 官方文档明确标注 searchable snapshots 需要 Enterprise 许可证。该能力能够让只读历史索引从快照仓库按需挂载，并省去默认副本，但不能把这一商业能力计入“纯开源免费方案”的容量和成本假设。<a href="https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore/searchable-snapshots">16</a></p>
+<p>选型建议如下：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>条件</th>
+<th>建议</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>强调纯开源、自主可控及避免关键能力订阅依赖</td>
+<td>优先 OpenSearch + ClickHouse</td>
+</tr>
+<tr>
+<td>已有 Elastic 集群、人员经验和安全内容，并能接受订阅</td>
+<td>Elasticsearch + ClickHouse 可进入 POC</td>
+</tr>
+<tr>
+<td>数据规模较小，希望第一阶段降低组件数量</td>
+<td>可先单独部署 OpenSearch 或 Elasticsearch，但保留消息层与对象归档</td>
+</tr>
+<tr>
+<td>日志量大、需要数月或数年的 UEBA 基线</td>
+<td>不建议只依赖 OpenSearch/Elasticsearch，长期明细和行为聚合逐步进入 ClickHouse</td>
+</tr>
+</tbody></table></div>
+<p>无论选择 OpenSearch 还是 Elasticsearch，其推荐职责均是近期全文搜索、交互调查、检测结果和告警；ClickHouse 负责长期明细、行为基线和高基数聚合，Kafka/Flink 负责缓冲回放与实时特征，对象存储负责原始归档和备份。最终应在同一 POC 中比较许可证范围、三年总成本、查询结果、故障恢复和运维复杂度。</p>
+<h2>5. 方案二：ClickHouse 与 ClickStack</h2>
+<p>建议组合：</p>
+<pre><code class="language-text">日志源 → Vector / OTel Collector → Kafka → ClickHouse → HyperDX / Grafana
+</code></pre>
+<p>【事实】ClickHouse 官方的 ClickStack 由 OpenTelemetry、ClickHouse 和 HyperDX 等组件组成，面向日志、指标和 Trace，提供 Lucene 风格搜索、SQL、仪表盘和告警；官方同时说明 ClickHouse 可以利用 MergeTree、物化视图和 HTTP 摄取构建自定义遥测栈。<a href="https://clickhouse.com/clickstack">10</a></p>
+<p>【解释】ClickHouse 的主要价值不是复制 Splunk 的全文倒排索引，而是通过列式存储、分区、排序键、跳数索引、物化视图和并行聚合处理长周期、高基数事件。UEBA 中常见的以下计算更适合这一形态：</p>
+<ul>
+<li>按用户、设备、IP、应用和资源聚合时间窗口；</li>
+<li>计算首次出现、稀有值、访问频率、数据量和同伴组分布；</li>
+<li>维护小时、日、周粒度的行为摘要；</li>
+<li>形成模型训练和回放所需的特征宽表；</li>
+<li>对半年或数年的审计数据执行批量分析。</li>
+</ul>
+<p>其不足是任意字段全文调查体验通常不如以倒排索引为核心的搜索引擎；若字段模型和排序键设计不合理，也会产生大范围扫描。ClickStack 提供可观测性界面，但不能被视为与 Splunk Enterprise Security 或 UEBA 一一等价的安全产品。</p>
+<h2>6. 方案三：Loki 与 Grafana</h2>
+<p>【事实】Loki 只为日志标签建立索引，日志正文压缩后保存在 chunk 中。官方推荐 TSDB 作为索引存储；可扩展部署依赖 S3、GCS、Azure 或兼容对象存储。<a href="https://grafana.com/docs/loki/latest/configure/storage/">11</a><a href="https://grafana.com/docs/loki/latest/setup/install/helm/configure-storage/">12</a></p>
+<p>这一设计能显著减少全文索引成本，适合 Kubernetes、应用运行日志和 SRE 故障排查。但安全日志通常包含用户、设备、进程、文件、域名、IP、规则标识等大量高基数字段，不能把它们全部设计为 Loki label。否则会形成过多日志流并增加索引和运行压力。</p>
+<p>因此 Loki 可以承担运维日志子集或成为旁路平台，不建议作为本项目完整替代 Splunk Indexer 的首选。</p>
+<h2>7. 方案四：Quickwit 与对象存储</h2>
+<p>【事实】Quickwit 的官方定位是从对象存储直接执行搜索，通过计算与存储解耦独立扩展索引和查询，适用场景包括日志、审计日志和安全日志；官方配置支持 S3、GCS、Azure、MinIO 和 Garage 等存储后端。<a href="https://quickwit.io/docs/overview/introduction">13</a><a href="https://quickwit.io/docs/configuration/storage-config">14</a></p>
+<p>这种架构适合长周期、不可变和低成本日志，也适合验证“对象存储作为主数据、查询计算按需扩展”的路线。但与 OpenSearch 相比，其 SIEM 检测内容、案件调查、权限运营和第三方集成生态需要专项验证。建议先作为历史数据或冷查询 POC，不在第一阶段承担全部生产安全日志。</p>
+<h2>8. UEBA 推荐目标架构</h2>
+<p>综合检索体验、长期成本和行为计算，本项目建议验证双引擎架构：</p>
+<pre><code class="language-text">Windows / AD / Zeek / 终端 / 云审计 / 业务日志
+                       │
+        Vector / Fluent Bit / OTel Collector
+                       │
+                       ▼
+                     Kafka
+          可回放、削峰、消费进度与数据扇出
+                       │
+        ┌──────────────┴──────────────┐
+        ▼                             ▼
+Data Prepper / 标准化任务         Flink / 流式特征任务
+        │                             │
+        ▼                             ▼
+OpenSearch                       ClickHouse
+近期事件、全文检索、告警          长期明细、行为特征、基线
+SOC 调查、检测结果与证据          高基数聚合、批量回放、模型输入
+        ▲                             │
+        └──── 异常/评分/证据回写 ─────┘
+                       │
+                       ▼
+             S3 兼容对象存储
+       原始不可变归档、快照、离线重放
+</code></pre>
+<h3>8.1 数据职责建议</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>数据对象</th>
+<th>建议主存储</th>
+<th>示例保留策略</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>近期可调查原始事件</td>
+<td>OpenSearch</td>
+<td>7～30 天，仅为待测起点</td>
+<td>服务高频交互搜索和检测</td>
+</tr>
+<tr>
+<td>长期标准化明细</td>
+<td>ClickHouse</td>
+<td>6～24 个月，按合规要求确定</td>
+<td>服务画像、聚合和历史分析</td>
+</tr>
+<tr>
+<td>原始不可变日志</td>
+<td>对象存储</td>
+<td>按审计与取证要求确定</td>
+<td>支持重新解析、追溯和灾难恢复</td>
+</tr>
+<tr>
+<td>实体特征与基线</td>
+<td>ClickHouse/专用状态层</td>
+<td>覆盖模型窗口并保留版本</td>
+<td>不能用原始日志保留期代替</td>
+</tr>
+<tr>
+<td>异常、风险与调查证据</td>
+<td>OpenSearch</td>
+<td>覆盖调查及复核周期</td>
+<td>必须保留规则、模型和数据版本</td>
+</tr>
+</tbody></table></div>
+<p>表中的天数只是 POC 起始假设，不是容量承诺。真实周期需要结合每日摄取量、查询频率、法规、恢复目标和硬件成本计算。</p>
+<h3>8.2 为什么不建议只使用一个引擎</h3>
+<p>只用 OpenSearch 能简化架构，但长周期全量倒排索引可能使存储和内存成本接近原问题；只用 ClickHouse 能降低成本，却会提高 SOC 任意文本调查和安全内容建设难度。双引擎把近期高价值检索与长期行为分析分开，代价是要解决双写、一致性、字段版本和跨引擎证据定位。</p>
+<p>可以通过以下原则控制复杂度：</p>
+<ul>
+<li>Kafka 消息或原始对象使用稳定 <code>event_id</code>，两侧保留同一标识；</li>
+<li>原始事件只解析一次，标准化 schema 有明确版本；</li>
+<li>不是所有日志都双写，只把需要高频调查的数据写入 OpenSearch；</li>
+<li>异常结果回写时保存特征值、基线值、时间窗、模型版本和证据 <code>event_id</code>；</li>
+<li>OpenSearch 不作为唯一原始档案，ClickHouse 聚合结果也不替代取证原文。</li>
+</ul>
+<h2>9. Splunk 迁移工作量与风险</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>迁移对象</th>
+<th>主要工作</th>
+<th>风险</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SPL 与保存搜索</td>
+<td>改写为 PPL、DSL、SQL 或流处理逻辑</td>
+<td>命令语义、时间边界、空值和关联行为不等价</td>
+</tr>
+<tr>
+<td>CIM 与字段提取</td>
+<td>建立自研 schema、解析器和映射测试</td>
+<td>同名字段口径不一致导致静默误判</td>
+</tr>
+<tr>
+<td>Data Model Acceleration、<code>tstats</code></td>
+<td>改为物化视图、汇总表或预聚合索引</td>
+<td>摘要覆盖与新鲜度变化</td>
+</tr>
+<tr>
+<td>Lookup、KV Store</td>
+<td>迁移到关系库、ClickHouse 字典或状态服务</td>
+<td>有效时间、更新原子性和历史版本丢失</td>
+</tr>
+<tr>
+<td>Dashboard 与告警</td>
+<td>在 Dashboards、Grafana、HyperDX 或自研界面重建</td>
+<td>展示一致不代表数据语义一致</td>
+</tr>
+<tr>
+<td>ES/UEBA 内容</td>
+<td>规则、特征、基线、风险及调查流程重建</td>
+<td>开源存储不会自动提供等价检测内容</td>
+</tr>
+<tr>
+<td>权限和审计</td>
+<td>重新设计租户、字段、实体画像和操作审计</td>
+<td>画像数据可能比单条日志更敏感</td>
+</tr>
+<tr>
+<td>历史数据</td>
+<td>选择迁移、双跑、归档查询或按需恢复</td>
+<td>全量重建索引成本高，旧 SPL 仍不可直接复用</td>
+</tr>
+</tbody></table></div>
+<h2>10. POC 设计与验收指标</h2>
+<p>POC 不应只比较每秒写入量。建议选取 Windows 安全日志、AD 变更、Zeek 连接日志以及一类高字段数终端日志，覆盖近期检索、长周期聚合和 UEBA 特征计算。</p>
+<h3>10.1 必测查询</h3>
+<ol>
+<li>精确字段过滤、关键词和通配符搜索；</li>
+<li>单实体 24 小时时间线与上下文事件；</li>
+<li>10 万级实体的小时/日聚合；</li>
+<li>30～90 天首次出现、稀有值和个人基线；</li>
+<li>多数据源身份、设备、IP 关联；</li>
+<li>晚到数据补采、规则重跑和特征回算；</li>
+<li>节点故障、消费者重启、重复消息和对象存储短暂不可用；</li>
+<li>按字段权限、租户权限和审计日志验证越权边界。</li>
+</ol>
+<h3>10.2 建议记录的指标</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>类别</th>
+<th>指标</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>摄取</td>
+<td>原始 GB/日、EPS、峰均比、端到端延迟、拒绝和重试量</td>
+</tr>
+<tr>
+<td>数据质量</td>
+<td>事件数对账、解析失败率、关键字段覆盖率、重复率、迟到分布</td>
+</tr>
+<tr>
+<td>查询</td>
+<td>P50/P95/P99 延迟、并发、扫描字节、缓存命中、超时和内存峰值</td>
+</tr>
+<tr>
+<td>存储</td>
+<td>压缩后容量、索引/明细/副本/快照分别占用、每日增长和恢复时间</td>
+</tr>
+<tr>
+<td>UEBA</td>
+<td>特征完成时间、基线新鲜度、回算时间、异常可解释字段完整率</td>
+</tr>
+<tr>
+<td>可用性</td>
+<td>单节点故障影响、恢复点目标、恢复时间目标、积压追平时间</td>
+</tr>
+<tr>
+<td>运维</td>
+<td>部署升级工时、告警数量、扩容步骤、备份恢复成功率</td>
+</tr>
+</tbody></table></div>
+<p>验收必须使用同一批事件、同一时间边界和等价查询比较结果集合；仅比较界面返回速度会掩盖漏数据、字段差异和摘要不完整。</p>
+<h2>11. 分阶段落地建议</h2>
+<h3>第一阶段：旁路采集与结果对账</h3>
+<p>保留现有 Splunk，利用源端或消息层把同一数据送入候选平台。首先验证事件数量、时间、字段和原文一致性，不立即迁移告警。</p>
+<h3>第二阶段：代表性查询与检测双跑</h3>
+<p>选择高频检索、典型 Dashboard、确定性安全规则和 3～5 个 UEBA 特征进行双跑，比较结果、延迟、资源和误差原因。</p>
+<h3>第三阶段：历史与长期计算迁移</h3>
+<p>优先把长周期报表、聚合和行为基线迁移到 ClickHouse，降低 Splunk 长窗口扫描和长期索引压力。异常结果仍可在过渡期送回现有调查流程。</p>
+<h3>第四阶段：调查入口与安全内容迁移</h3>
+<p>在查询、权限、告警、案件和恢复能力达标后，再逐批迁移 OpenSearch 调查入口及安全检测。每批都保留回退和对账窗口。</p>
+<h2>12. 最终判断</h2>
+<p>如果目标是以最低迁移风险替代 Splunk 平台，首选 <code>Kafka + Data Prepper + OpenSearch + OpenSearch Dashboards/Security Analytics + 对象存储</code>。</p>
+<p>如果目标是显著降低长期存储成本并支撑自研 UEBA，首选验证 <code>Kafka + OpenSearch（近期调查）+ ClickHouse（长期行为分析）+ 对象存储（原始归档）+ Flink（流式特征）</code>。</p>
+<p>Elasticsearch 推荐作为近期检索层的备选，而不是被排除：已有 Elastic 技术栈且可接受订阅时，可将上述架构中的 OpenSearch 替换为 Elasticsearch；强调纯开源和自主可控则仍优先 OpenSearch。两种情况下都不建议让单一搜索引擎同时承担全部长期日志与 UEBA 计算。</p>
+<p>当前证据支持架构可行性判断，但不支持直接承诺容量、成本节省比例或与 Splunk 功能完全等价。下一步应以真实数据和等价查询完成 POC，再决定单引擎还是双引擎、热数据周期、是否需要 Flink，以及哪些 Splunk 内容值得迁移。</p>
+<h2>13. 主要官方资料</h2>
+<ul>
+<li>Splunk：<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.0/how-indexer-clusters-work/buckets-and-indexer-clusters">Buckets and indexer clusters</a>、<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.4/overview-of-indexer-clusters-and-index-replication/the-basics-of-indexer-cluster-architecture">Indexer cluster architecture</a>、<a href="https://help.splunk.com/?resourceId=Platform_FederatedSearch_fsoptions">Federated Search options</a>。</li>
+<li>OpenSearch：<a href="https://docs.opensearch.org/latest/data-prepper/">Data Prepper</a>、<a href="https://docs.opensearch.org/latest/im-plugin/ism/index/">Index State Management</a>、<a href="https://docs.opensearch.org/latest/security-analytics/">Security Analytics</a>。</li>
+<li>Elastic：<a href="https://www.elastic.co/docs/manage-data/lifecycle/data-tiers">Data tiers</a>、<a href="https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore/searchable-snapshots">Searchable snapshots</a>。</li>
+<li>ClickHouse：<a href="https://clickhouse.com/clickstack">ClickStack</a>。</li>
+<li>Grafana：<a href="https://grafana.com/docs/loki/latest/configure/storage/">Loki storage</a>、<a href="https://grafana.com/docs/loki/latest/setup/install/helm/configure-storage/">Loki object storage configuration</a>。</li>
+<li>Quickwit：<a href="https://quickwit.io/docs/overview/introduction">Introduction</a>、<a href="https://quickwit.io/docs/configuration/storage-config">Storage configuration</a>。</li>
+</ul>
+</section><section id="part-08"><h1>数据进入与 UEBA 特征计算机制</h1>
+<h2>1. 本册回答什么问题</h2>
+<p>本册以建议的 <code>采集器 + Kafka + OpenSearch + ClickHouse + Flink + 对象存储</code> 架构为对象，回答四个问题：</p>
+<ol>
+<li>一条 Windows、AD、Zeek、终端或云审计日志怎样进入平台；</li>
+<li>每个环节什么时候可以确认数据已成功交付；</li>
+<li>UEBA 特征到底在什么时候、由哪个组件、对什么数据执行；</li>
+<li>当前行为怎样与历史基线比较并生成可调查的异常证据。</li>
+</ol>
+<p>文中的组件能力事实引用项目官方文档；具体字段、周期、阈值和数据表是建议设计或示例，需要通过本项目 POC 确认。</p>
+<h2>2. 端到端总图</h2>
+<pre><code class="language-text">Windows / AD / Zeek / 终端 / 云审计 / 业务日志
+                       │
+                       ▼
+          本地 Agent：读取、检查点、批量、重试
+                       │
+                       ▼
+          区域 Gateway：接入、鉴权、限流（可选）
+                       │
+                       ▼
+                     Kafka
+            持久缓冲、回放、消费组、扇出
+                       │
+       ┌───────────────┼──────────────────┐
+       ▼               ▼                  ▼
+ 原始归档消费者    标准化处理流水线       实时特征任务
+ S3/MinIO/Ceph     Data Prepper/Flink       Flink
+       │               │                  │
+       │               ▼                  ▼
+       │        normalized Kafka      feature/anomaly Kafka
+       │          │          │              │
+       │          ▼          ▼              ▼
+       │     OpenSearch   ClickHouse     OpenSearch
+       │     近期调查     长期明细/基线    异常与证据
+       │          ▲          │              │
+       └──────────┴──────────┴──────────────┘
+              以 event_id / raw_ref 贯通证据
+</code></pre>
+<p>OpenSearch 在该架构中主要负责近期全文检索、规则检测、异常展示和调查；ClickHouse 负责长期标准化明细、聚合特征和历史基线；Flink 负责需要持续状态和事件时间窗口的实时计算；对象存储保留不可变原始证据。</p>
+<h2>3. 第一阶段：源系统产生事实</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>数据源</th>
+<th>典型记录</th>
+<th>原始形态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Windows Security</td>
+<td>登录、进程、账号和权限变更</td>
+<td>Windows Event XML</td>
+</tr>
+<tr>
+<td>Active Directory</td>
+<td>用户、组、目录对象及审计事件</td>
+<td>Windows Event、LDAP/目录快照</td>
+</tr>
+<tr>
+<td>Zeek</td>
+<td>conn、dns、http、ssl、files 等日志</td>
+<td>TSV、JSON</td>
+</tr>
+<tr>
+<td>EDR/终端</td>
+<td>进程、文件、注册表、网络连接</td>
+<td>JSON、API</td>
+</tr>
+<tr>
+<td>网络和安全设备</td>
+<td>防火墙、VPN、DNS、代理</td>
+<td>Syslog、CEF、厂商格式</td>
+</tr>
+<tr>
+<td>云平台</td>
+<td>登录、控制面和资源变更</td>
+<td>API、消息、对象文件</td>
+</tr>
+<tr>
+<td>业务系统</td>
+<td>用户操作、文件下载、审批</td>
+<td>JSON、数据库审计</td>
+</tr>
+</tbody></table></div>
+<p>源系统此时只产生事实。例如 4624 表示一条登录成功事件，Zeek conn 表示一次连接；它们还不是“异常登录”或“数据外泄”。</p>
+<p>每条进入采集层的记录至少需要保留：</p>
+<pre><code class="language-json">{
+  &quot;source_type&quot;: &quot;windows_security&quot;,
+  &quot;source_host&quot;: &quot;dc01&quot;,
+  &quot;source_native_id&quot;: &quot;Security:987654&quot;,
+  &quot;event_time&quot;: &quot;2026-09-10T10:15:23.123+08:00&quot;,
+  &quot;observed_time&quot;: &quot;2026-09-10T10:15:24.002+08:00&quot;,
+  &quot;raw&quot;: &quot;&lt;Event&gt;...&lt;/Event&gt;&quot;
+}
+</code></pre>
+<ul>
+<li><code>event_time</code> 是行为发生时间，用于 UEBA 时间窗；</li>
+<li><code>observed_time</code> 是采集器观察到它的时间，用于测量采集延迟；</li>
+<li><code>source_native_id</code> 是源系统记录标识；</li>
+<li><code>raw</code> 是未经标准化覆盖的原始证据。</li>
+</ul>
+<p>不能只保留接收时间。网络恢复后补采的上午事件可能下午才到，如果按下午时间进入行为窗口，就会产生错误顺序和基线污染。</p>
+<h2>4. 第二阶段：本地 Agent 采集</h2>
+<p>Agent 可选 Vector、Fluent Bit、OpenTelemetry Collector 或满足具体数据源要求的专用采集器。它负责读取文件、事件通道、Syslog 或 API，记录读取位置，补充来源元数据，批量压缩并发送。</p>
+<p>【事实】OpenTelemetry Collector 官方将流水线组织为 Receiver、可选 Processor 和 Exporter：Receiver 接收或主动获取遥测数据，Processor 按顺序处理，Exporter 发往一个或多个下游。<a href="https://opentelemetry.io/docs/collector/architecture/">1</a></p>
+<h3>4.1 检查点</h3>
+<p>文件采集要保存文件身份和偏移量；Windows 事件采集要保存相应通道进度。检查点必须持久化并和发送确认配合：</p>
+<pre><code class="language-text">读取记录
+  → 写入本地发送队列
+  → 下游确认
+  → 推进可提交检查点
+</code></pre>
+<p>若读取后立即推进检查点、尚未等下游确认，Agent 崩溃可能漏数据；若永不推进，重启后会重复读取。因此生产目标通常是“允许重发、下游幂等”，而不是以牺牲数据完整性换取表面无重复。</p>
+<h3>4.2 本地队列和重试</h3>
+<p>【事实】OpenTelemetry 官方说明，网络 Exporter 可以使用发送队列和指数退避重试；纯内存队列在进程崩溃时会丢失，队列满或超过重试期限也可能丢数据。不能接受该风险时应配置持久化 WAL，并监控队列容量、入队失败和发送失败。<a href="https://opentelemetry.io/docs/collector/resiliency/">2</a><a href="https://opentelemetry.io/docs/collector/internal-telemetry/">3</a></p>
+<p>建议监控：读取量、发送量、最后检查点、本地队列使用率、最老待发事件年龄、永久失败和丢弃数。</p>
+<h2>5. 第三阶段：Gateway 与 Kafka</h2>
+<p>Gateway 是可选区域汇聚层，用于统一 TLS/mTLS、认证、限流、批量和网络隔离。复杂解析、目录查询和模型计算不宜堆在 Gateway 上，否则一个慢处理器可能阻塞入口。OpenTelemetry 官方也提示，同一 Receiver 同步扇出到多个流水线时，一个阻塞的 Processor 可能阻塞其他流水线；需要可靠扇出时应借助消息队列解耦。<a href="https://opentelemetry.io/docs/collector/architecture/">1</a></p>
+<p>Kafka 接收后，记录由 <code>topic + partition + offset</code> 定位。建议至少区分原始与标准化主题：</p>
+<pre><code class="language-text">raw.windows.security
+raw.zeek.conn
+raw.endpoint
+normalized.security.events
+ueba.features
+ueba.anomalies
+</code></pre>
+<p>原始 Topic 可以按 <code>source_host</code> 或 <code>sensor_id</code> 分区；当身份已经解析后，实时 UEBA Topic 可按 <code>user_id</code> 或 <code>device_id</code> 重新分区，使同一实体的状态由同一 Keyed Operator 管理。</p>
+<p>【事实】Kafka 的幂等 Producer 默认依赖重试和 <code>acks=all</code>；官方给出的耐久配置示例包括副本因子 3、<code>min.insync.replicas=2</code> 和事务/幂等 Producer。<code>acks=all</code> 只表示 Kafka 按副本配置确认写入，不表示后续数据库已经完成处理。<a href="https://kafka.apache.org/41/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html">4</a></p>
+<p>【事实】Kafka 默认更接近至少一次投递。消费者可能在写完外部系统后、提交 Offset 前崩溃，恢复后重新消费同一批；写外部系统要达到端到端 exactly-once，需要目标系统配合，否则必须通过主键、稳定标识或幂等写入处理重复。<a href="https://kafka.apache.org/40/design/design/">5</a></p>
+<h2>6. 稳定事件标识和原始归档</h2>
+<p>建议在采集或标准化早期生成稳定 <code>event_id</code>：</p>
+<pre><code class="language-text">event_id = hash(
+  tenant_id,
+  source_type,
+  source_host,
+  source_native_id,
+  event_time,
+  raw_content_hash
+)
+</code></pre>
+<p>同一原始事实重放后仍得到相同 ID。它用于 Kafka 重放去重、OpenSearch 文档 ID、ClickHouse 批次/事件核对以及异常证据回查。</p>
+<p>原始数据应由独立消费者尽早归档到 S3、MinIO 或 Ceph RGW，例如：</p>
+<pre><code class="language-text">s3://ueba-raw/
+  tenant=company-a/
+  source_type=windows_security/
+  date=2026-09-10/
+  hour=10/
+  part-00001.parquet
+</code></pre>
+<p>对象文件同时保存 schema 版本、事件数、最小/最大事件时间和内容校验值。原始区尽量不可变，标准化、脱敏和富化不能覆盖源证据。</p>
+<h2>7. 第四阶段：解析、标准化、富化和质量检查</h2>
+<p>Data Prepper 或 Flink 从 Kafka 读取原始记录，执行：</p>
+<pre><code class="language-text">解码原始格式
+  → 解析事件时间
+  → 映射统一字段
+  → 补充来源和租户
+  → 身份/资产/网络轻量富化
+  → 数据质量校验
+  → 输出 normalized Topic
+</code></pre>
+<p>【事实】OpenSearch 将 Data Prepper 定义为首选摄取工具，其 Pipeline 包括 Source、可选 Buffer、Processors 和 Sink，可执行过滤、丰富、转换、标准化和聚合。<a href="https://docs.opensearch.org/latest/data-prepper/">6</a></p>
+<p>标准化示例：</p>
+<pre><code class="language-json">{
+  &quot;event_id&quot;: &quot;...&quot;,
+  &quot;event_time&quot;: &quot;2026-09-10T10:15:23+08:00&quot;,
+  &quot;event.category&quot;: &quot;authentication&quot;,
+  &quot;event.action&quot;: &quot;logon&quot;,
+  &quot;event.outcome&quot;: &quot;success&quot;,
+  &quot;user.name&quot;: &quot;zhangsan&quot;,
+  &quot;host.name&quot;: &quot;DC01&quot;,
+  &quot;source.ip&quot;: &quot;10.0.0.8&quot;,
+  &quot;schema_version&quot;: 12,
+  &quot;raw_ref&quot;: &quot;s3://ueba-raw/...&quot;
+}
+</code></pre>
+<p>富化字段要与源字段分开，并记录富化快照版本。例如 <code>TargetUserName</code> 是日志事实，<code>employee_id</code> 和 <code>department</code> 是身份目录在某一时刻给出的上下文。目录关系变化后，应能解释当时使用了哪个版本。</p>
+<p>解析错误不能静默丢弃。建议将 <code>failure_stage</code>、<code>failure_reason</code>、Pipeline 版本和原始事件写入 DLQ。Data Prepper 官方支持端到端确认及 DLQ；在多 Sink 链路中，最终 Sink 成功后才正向确认，无法处理的事件应可靠进入 DLQ，避免毒丸事件无限重放。<a href="https://docs.opensearch.org/latest/data-prepper/pipelines/pipelines/">7</a><a href="https://docs.opensearch.org/latest/data-prepper/pipelines/configuration/sinks/opensearch/">8</a></p>
+<h2>8. 第五阶段：OpenSearch 与 ClickHouse 双写</h2>
+<p>建议让两个引擎消费同一 <code>normalized.security.events</code>，不要各自独立解析原始文本。</p>
+<h3>8.1 OpenSearch</h3>
+<p>OpenSearch 保存近期可调查事件，主要服务：全文检索、字段过滤、SOC 时间线、规则检测、异常证据和告警。使用稳定 <code>event_id</code> 作为文档 ID，可降低至少一次重放造成的重复影响。</p>
+<p>进入前应通过 Index Template 固定时间、IP、数值、<code>keyword</code> 和全文字段类型，禁止不受控动态字段扩张；再使用 ISM 管理 rollover、只读、合并和删除。<a href="https://docs.opensearch.org/latest/im-plugin/ism/index/">9</a></p>
+<h3>8.2 ClickHouse</h3>
+<p>ClickHouse 保存长期标准化明细和特征表。Kafka Consumer、Kafka Connect 或 Vector 以批次插入，成功后再提交消费位置。ClickHouse 官方列出的 Kafka 接入方案包括 Kafka Connect 和 Vector。<a href="https://clickhouse.com/integrations/kafka">10</a></p>
+<p>写入成功但 Offset 未提交时会重放，因此应使用稳定批次 Token 或经验证的幂等方案。ClickHouse 官方说明 MergeTree 系列表支持对重试插入进行自动去重，但具体去重窗口、Token、表引擎及物化视图行为必须配置和测试，不能仅因表里存在 <code>event_id</code> 就声称自动 exactly-once。<a href="https://clickhouse.com/blog/clickhouse-release-26-01">11</a></p>
+<h2>9. UEBA 特征是什么</h2>
+<p>特征不是原始字段的简单改名，而是为了描述某个实体在一个观察窗口内行为的可比较数值或类别。</p>
+<pre><code class="language-text">原始事件：用户 A 在 10:03 访问外部 IP，发送 35 MB
+当前特征：用户 A 在 10:00～11:00 对外发送 8 GiB
+历史基线：用户 A 可比小时的 P95 为 0.8 GiB
+异常结果：当前值约为历史 P95 的 10 倍
+</code></pre>
+<p>建议特征记录至少包含：</p>
+<pre><code class="language-json">{
+  &quot;entity_type&quot;: &quot;user&quot;,
+  &quot;entity_id&quot;: &quot;employee-1024&quot;,
+  &quot;feature_name&quot;: &quot;outbound_bytes_1h&quot;,
+  &quot;window_start&quot;: &quot;2026-09-10T10:00:00+08:00&quot;,
+  &quot;window_end&quot;: &quot;2026-09-10T11:00:00+08:00&quot;,
+  &quot;value&quot;: 8589934592,
+  &quot;event_count&quot;: 1832,
+  &quot;feature_version&quot;: 5,
+  &quot;data_watermark&quot;: &quot;2026-09-10T11:05:00+08:00&quot;,
+  &quot;evidence_refs&quot;: [&quot;event-id-1&quot;, &quot;event-id-2&quot;]
+}
+</code></pre>
+<p>特征必须明确实体、时间窗、统计口径和版本。“登录次数=20”不是完整特征定义，因为还缺少按谁、在哪个窗口、哪些登录类型、成功还是失败、是否去重等信息。</p>
+<h2>10. 特征计算在什么时候执行</h2>
+<p>没有一个统一时刻。建议分成四条执行路径：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>触发时机</th>
+<th align="right">典型延迟</th>
+<th>适合计算什么</th>
+<th>推荐执行位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>单事件派生</td>
+<td>每条标准化事件到达时</td>
+<td align="right">毫秒～秒</td>
+<td>内外网方向、非工作时间、是否新域名格式</td>
+<td>Data Prepper/Flink</td>
+</tr>
+<tr>
+<td>增量聚合</td>
+<td>每批事件插入时持续更新</td>
+<td align="right">秒～分钟</td>
+<td>分钟计数、字节和、去重近似值</td>
+<td>ClickHouse 增量 MV/Flink</td>
+</tr>
+<tr>
+<td>窗口闭合</td>
+<td>Watermark 超过窗口结束并保留迟到容忍后</td>
+<td align="right">分钟级</td>
+<td>1h 外发量、15m 登录失败、序列和会话</td>
+<td>Flink</td>
+</tr>
+<tr>
+<td>周期批量</td>
+<td>每小时、每日或模型计划周期</td>
+<td align="right">小时级</td>
+<td>7/30/90 天基线、同伴组、重算和回填</td>
+<td>ClickHouse SQL/Refreshable MV/批处理</td>
+</tr>
+</tbody></table></div>
+<h3>10.1 单事件派生</h3>
+<p>事件一到即可执行，不依赖历史，例如：</p>
+<ul>
+<li>IP 是否属于内部网段；</li>
+<li>事件发生时间是否属于工作时间；</li>
+<li>目标端口是否为管理端口；</li>
+<li>账号类型是否为服务账号；</li>
+<li>日志质量是否缺少关键字段。</li>
+</ul>
+<p>这些字段可以随标准化一起产生，但外部 lookup 必须有版本和超时策略，不能因为目录服务不可用而阻塞整条入口。</p>
+<h3>10.2 增量聚合</h3>
+<p>【事实】ClickHouse Incremental Materialized View 类似插入触发器：新 Block 写入源表时，View 只对该 Block 执行 SELECT，并将部分聚合写入目标表；它不会定期扫描完整源表。<a href="https://clickhouse.com/blog/clickstack-faster-observability">12</a><a href="https://clickhouse.com/demos/explore-github-with-clickhouse-powered-real-time-analytics">13</a></p>
+<p>适合预计算：</p>
+<pre><code class="language-text">每用户每分钟登录成功/失败数
+每设备每分钟对外字节量
+每用户每小时访问资源数
+每传感器每分钟事件覆盖量
+</code></pre>
+<p>它把部分查询成本移到写入时，但不适合依赖频繁变化右表的复杂关联。ClickHouse 官方提醒，增量 MV 只由源表 insert 触发，源数据更新、删除或 Join 右表变化不会自动传播，必须另行重建或选择周期刷新。<a href="https://clickhouse.com/blog/10-best-practice-tips">14</a></p>
+<h3>10.3 窗口闭合计算</h3>
+<p>Flink 用事件时间而不是服务器当前时间把记录分入窗口。官方区分 event time、ingestion time 和 processing time，并使用 Watermark 表示系统认为事件时间已经推进到哪里；Watermark 同时构成延迟与完整性的取舍。<a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/learn-flink/streaming_analytics/">15</a></p>
+<p>【示例】1 小时外发特征允许迟到 5 分钟：</p>
+<pre><code class="language-text">事件窗口：10:00:00 ～ 11:00:00
+首次出结果：Watermark 越过 11:00
+接受修正：允许迟到窗口内的事件更新结果
+最终版本：Watermark 越过 11:05 后封版
+</code></pre>
+<p>具体 5 分钟只是示例，应从实际到达延迟 P95/P99 决定。等待越久，结果越完整但告警越慢；等待越短，告警更快但后续修正更多。</p>
+<h3>10.4 周期批量计算</h3>
+<p>适合计算：</p>
+<ul>
+<li>用户过去 30 个可比日的均值、标准差、P50/P95/P99；</li>
+<li>部门或角色同伴组分布；</li>
+<li>90 天首次出现集合；</li>
+<li>特征质量、覆盖率和模型成熟度；</li>
+<li>schema 或算法升级后的历史重算。</li>
+</ul>
+<p>ClickHouse Refreshable Materialized View 可以按计划完整重新执行查询，适合复杂多表查询或周期更新；Incremental MV 则随插入触发。两者要根据实时性、Join 变化和写入成本选择。<a href="https://clickhouse.com/blog/common-getting-started-issues-with-clickhouse">15a</a></p>
+<h2>11. 特征计算怎么执行</h2>
+<h3>11.1 Flink 实时执行链</h3>
+<pre><code class="language-text">Kafka normalized
+  → 提取 event_time
+  → 分配 Watermark
+  → keyBy(user_id / device_id)
+  → 过滤有效事件
+  → 窗口/定时器/序列状态
+  → 输出 feature Topic
+  → 当前特征与基线比较
+  → 输出 anomaly Topic
+</code></pre>
+<p>【事实】Flink Keyed State 只能用于 KeyedStream，状态随 Key 分区；例如同一 <code>user_id</code> 的计数、最近设备集合和序列状态由相应 Key 的 Operator 实例管理。<a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/fault-tolerance/state/">16</a></p>
+<p>Flink 状态可能包括：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>状态</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ValueState</td>
+<td>上次登录时间、最近一次风险值</td>
+</tr>
+<tr>
+<td>MapState</td>
+<td>最近 30 天见过的设备及最后出现时间</td>
+</tr>
+<tr>
+<td>ListState</td>
+<td>尚未闭合的行为序列证据</td>
+</tr>
+<tr>
+<td>窗口聚合状态</td>
+<td>当前小时字节和、连接数、失败数</td>
+</tr>
+<tr>
+<td>Broadcast State</td>
+<td>小规模规则、网段或版本化策略</td>
+</tr>
+</tbody></table></div>
+<p>【事实】Flink 使用可重放 Source 与持久 Checkpoint 保存流位置和 Operator State，故障后恢复状态并从对应位置重放。Checkpoint 默认需要显式启用，存储位置也必须配置。<a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/fault-tolerance/checkpointing/">17</a></p>
+<h3>11.2 ClickHouse 批量执行链</h3>
+<pre><code class="language-text">security_events 明细表
+  → 每小时/每日 SQL
+  → 按 entity_id + comparable_period 聚合
+  → 写 feature_baseline
+  → 记录 input_watermark + feature_version
+</code></pre>
+<p>执行任务必须用固定输入截止点。例如 02:00 计算前一天基线时，先确认前一天数据 Watermark 已达到可接受完整度，再记录：</p>
+<pre><code class="language-text">baseline_date=2026-09-09
+input_event_time_end=2026-09-10 00:00:00
+input_arrival_cutoff=2026-09-10 01:30:00
+schema_version=12
+feature_version=5
+</code></pre>
+<p>否则同一查询在不同时间运行可能因迟到数据得到不同结果，却无法解释版本变化。</p>
+<h2>12. 具体执行什么特征</h2>
+<p>建议分六类，而不是一开始追求复杂模型。</p>
+<h3>12.1 量与频率</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>特征</th>
+<th>实体</th>
+<th>窗口</th>
+<th>示例计算</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>登录失败次数</td>
+<td>用户/IP</td>
+<td>15 分钟</td>
+<td><code>countIf(outcome=&#39;failure&#39;)</code></td>
+</tr>
+<tr>
+<td>对外发送字节</td>
+<td>用户/设备</td>
+<td>1 小时</td>
+<td><code>sum(bytes_out)</code></td>
+</tr>
+<tr>
+<td>外部连接数</td>
+<td>设备</td>
+<td>1 小时</td>
+<td><code>count()</code></td>
+</tr>
+<tr>
+<td>文件读取量</td>
+<td>用户</td>
+<td>1 小时</td>
+<td><code>sum(file_bytes)</code></td>
+</tr>
+</tbody></table></div>
+<h3>12.2 去重与覆盖面</h3>
+<ul>
+<li>唯一目的 IP/国家/域名数量；</li>
+<li>唯一设备、应用、资源数量；</li>
+<li>一段时间内访问的敏感目录覆盖面；</li>
+<li>同账号同时活动的设备数量。</li>
+</ul>
+<h3>12.3 首次出现和稀有度</h3>
+<ul>
+<li>用户首次使用某设备；</li>
+<li>设备首次连接某外部域名；</li>
+<li>用户首次访问某敏感系统；</li>
+<li>某部门中仅极少实体出现的工具或目的地。</li>
+</ul>
+<p>首次出现必须定义回看期和历史完整性。“过去 30 天没见过”不等于“从未见过”。历史不足的新用户要标记 <code>baseline_mature=false</code>，不能直接按老用户阈值评分。</p>
+<h3>12.4 时间行为</h3>
+<ul>
+<li>非工作时间行为占比；</li>
+<li>与个人常用活跃时段的偏移；</li>
+<li>两次活动间隔；</li>
+<li>短时间内跨地域登录；</li>
+<li>登录、访问、压缩、外传之间的时间差。</li>
+</ul>
+<h3>12.5 序列和关联</h3>
+<ul>
+<li>多次登录失败后成功；</li>
+<li>新设备登录后访问敏感目录；</li>
+<li>权限提升后批量读取；</li>
+<li>批量读取后异常外发；</li>
+<li>DNS 探测后建立长连接。</li>
+</ul>
+<p>这类特征需要保存尚未完成的序列状态，并为每一步保留证据 ID。它比单窗口计数更适合 Flink 状态机或 CEP，而不是只依赖 ClickHouse 单条增量 MV。</p>
+<h3>12.6 数据质量和可信度</h3>
+<p>UEBA 还需要计算“能否相信当前特征”：</p>
+<ul>
+<li>数据源覆盖率；</li>
+<li>关键字段缺失率；</li>
+<li>迟到比例；</li>
+<li>身份解析置信度；</li>
+<li>同一实体关系冲突数；</li>
+<li>基线样本数和成熟度。</li>
+</ul>
+<p>没有输入和行为为零必须区分。质量不足时应降低结论强度或暂停评分，而不是把零值当正常。</p>
+<h2>13. 当前特征怎样与基线比较</h2>
+<p>基线不是固定阈值，而是一个带比较对象、历史范围和版本的参考分布。</p>
+<h3>13.1 个人基线</h3>
+<pre><code class="language-text">当前：用户 A 今天 10:00～11:00 对外 8 GiB
+历史：用户 A 过去 30 个可比工作日同小时 P95=0.8 GiB
+</code></pre>
+<h3>13.2 同伴基线</h3>
+<pre><code class="language-text">当前：用户 A 今日访问 42 个敏感项目
+同伴：相同岗位用户今日 P99=9 个
+</code></pre>
+<h3>13.3 全局或策略阈值</h3>
+<pre><code class="language-text">明确禁止：普通用户访问域控管理接口
+</code></pre>
+<p>三者可以同时产生证据，但不能把倍数、Z-score、分位数和恶意概率混为一个含义。异常结果应记录：</p>
+<pre><code class="language-json">{
+  &quot;feature_name&quot;: &quot;outbound_bytes_1h&quot;,
+  &quot;current_value&quot;: 8589934592,
+  &quot;baseline_type&quot;: &quot;personal_comparable_hour&quot;,
+  &quot;baseline_p95&quot;: 858993459,
+  &quot;sample_count&quot;: 27,
+  &quot;deviation_ratio&quot;: 10.0,
+  &quot;feature_version&quot;: 5,
+  &quot;baseline_version&quot;: 18,
+  &quot;evidence_event_ids&quot;: [&quot;e1&quot;, &quot;e2&quot;]
+}
+</code></pre>
+<h2>14. 什么时候执行异常评分</h2>
+<p>推荐门槛：</p>
+<pre><code class="language-text">当前窗口已达到发布 Watermark
+AND 当前特征计算成功
+AND 对应 baseline_version 可用
+AND 样本成熟度达标
+AND 数据质量未处于阻断状态
+THEN 执行异常比较和评分
+</code></pre>
+<p>可分两次发布：</p>
+<ol>
+<li><strong>快速初判</strong>：窗口首次闭合即计算，标记 <code>provisional=true</code>；</li>
+<li><strong>迟到修正</strong>：允许迟到期限结束后更新同一个 <code>anomaly_id</code>，标记最终版本。</li>
+</ol>
+<p>不要每来一条事件都重新扫描 30 天历史。正确做法是提前维护基线状态，当前窗口闭合时读取相应基线进行常数级比较；需要重算的长期基线由批量任务完成。</p>
+<h2>15. 迟到、重复、回放和版本升级</h2>
+<h3>15.1 迟到事件</h3>
+<ul>
+<li>在允许迟到范围内：更新窗口特征和同一异常版本；</li>
+<li>超过允许范围：写入 late-event 旁路，按重要性修正或批量重算；</li>
+<li>不能直接丢弃而不计数。</li>
+</ul>
+<h3>15.2 重复事件</h3>
+<ul>
+<li>保持稳定 <code>event_id</code>；</li>
+<li>OpenSearch 采用稳定文档 ID；</li>
+<li>ClickHouse 使用经验证的批次 Token/去重策略；</li>
+<li>特征任务对同一输入版本保持幂等；</li>
+<li>anomaly ID 由检测版本、实体、窗口和证据集合稳定生成。</li>
+</ul>
+<h3>15.3 历史回放</h3>
+<p>回放进入单独版本或 Topic，明确：输入时间范围、schema 版本、特征版本、基线版本和输出目标。不能让历史回放再次给生产实体重复加风险。</p>
+<h3>15.4 算法升级</h3>
+<p>新旧特征版本应并行：</p>
+<pre><code class="language-text">outbound_bytes_1h:v5 → 现网评分
+outbound_bytes_1h:v6 → 影子验证
+</code></pre>
+<p>对比覆盖率、结果差异和误报原因后再切换；不能原地覆盖导致历史异常失去解释。</p>
+<h2>16. Kafka Offset 在什么时候提交</h2>
+<p>错误顺序：</p>
+<pre><code class="language-text">读取 Kafka → 先提交 Offset → 写数据库失败 = 数据丢失
+</code></pre>
+<p>建议顺序：</p>
+<pre><code class="language-text">读取 Kafka
+  → 处理和校验
+  → 写目标系统或可靠 DLQ
+  → 收到确认
+  → 提交 Offset
+</code></pre>
+<p>如果写成功但提交前崩溃，会发生重复消费，所以目标必须幂等。这是“至少一次 + 幂等”的核心，不应笼统宣传全链路 exactly-once。</p>
+<h2>17. 一条登录到外发异常的完整实例</h2>
+<pre><code class="language-text">10:15 DC01 产生 4624 登录
+  → Agent 读取并生成 event_id=W1
+  → Kafka raw.windows.security
+  → 原始 XML 归档
+  → 标准化 user_id=U1, device_id=D1
+  → OpenSearch 保存近期事件
+  → ClickHouse 保存长期明细
+  → Flink 查询 D1 是否属于 U1 的近期设备集合
+  → 产生 new_device_login=true
+
+10:20～10:55 Zeek 记录 D1 多次对外连接
+  → 标准化并归到 device_id=D1
+  → Flink 按 D1 聚合 10:00～11:00 外发字节
+  → Watermark 越过窗口边界后得到 8 GiB
+  → 读取 U1/D1 历史可比窗口 P95=0.8 GiB
+  → 组合“新设备 + 10 倍外发偏离”证据
+  → anomaly_id=A1 回写 OpenSearch
+  → 分析师从 A1 回查 W1 和 Zeek event_id 集合
+</code></pre>
+<p>这里仍只能得出“新设备登录后出现异常外发迹象”，不能仅凭流量元数据确认敏感文件已经泄露。文件审计、DLP、代理或终端证据决定结论强度。</p>
+<h2>18. 运行调度建议示例</h2>
+<p>以下周期用于说明分层，不是生产默认值：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>任务</th>
+<th>触发</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>原始解析与标准化</td>
+<td>事件持续到达</td>
+<td>normalized event</td>
+</tr>
+<tr>
+<td>分钟级基础聚合</td>
+<td>新批次插入/1 分钟窗口</td>
+<td>entity-minute feature</td>
+</tr>
+<tr>
+<td>15 分钟登录失败</td>
+<td>Watermark 闭合</td>
+<td>authentication feature</td>
+</tr>
+<tr>
+<td>1 小时外发量</td>
+<td>Watermark 闭合并允许迟到</td>
+<td>network feature</td>
+</tr>
+<tr>
+<td>快速异常评分</td>
+<td>当前特征首次发布</td>
+<td>provisional anomaly</td>
+</tr>
+<tr>
+<td>最终异常修正</td>
+<td>迟到期限结束</td>
+<td>final anomaly version</td>
+</tr>
+<tr>
+<td>日基线</td>
+<td>每日且数据完整度达标</td>
+<td>baseline snapshot</td>
+</tr>
+<tr>
+<td>同伴组刷新</td>
+<td>每日/组织关系变化后</td>
+<td>peer-group version</td>
+</tr>
+<tr>
+<td>历史回算</td>
+<td>人工审批或版本发布</td>
+<td>versioned backfill</td>
+</tr>
+</tbody></table></div>
+<h2>19. 必须监控的端到端指标</h2>
+<pre><code class="language-text">源端产生数
+≈ Agent 接收数
+≈ Kafka 写入数
+≈ 原始归档数
+≈ 标准化成功数 + DLQ 数
+≈ OpenSearch 写入数
+≈ ClickHouse 写入数
+</code></pre>
+<p>同时监控：</p>
+<ul>
+<li>Agent 检查点、队列容量和最老事件年龄；</li>
+<li>Kafka Consumer Lag、ISR 和写入失败；</li>
+<li>解析成功率、关键字段覆盖率和 DLQ；</li>
+<li>OpenSearch 写入拒绝、查询延迟和磁盘水位；</li>
+<li>ClickHouse 插入延迟、Part 数、重复和扫描字节；</li>
+<li>Flink Watermark、迟到量、Checkpoint、状态大小和重启次数；</li>
+<li>特征完成时间、基线截止点、成熟度和异常证据完整率。</li>
+</ul>
+<p>组件进程存活不等于数据链路正常。应对每个来源建立事件数、最后事件时间和关键字段覆盖的端到端对账。</p>
+<h2>20. 最终设计原则</h2>
+<ol>
+<li>原始事实、标准化事件、特征、基线、异常和案件分层保存；</li>
+<li>事件时间决定行为窗口，处理时间用于观察系统延迟；</li>
+<li>实时任务算当前窗口和短状态，批量任务算长期基线与重算；</li>
+<li>不重复扫描长历史，基线提前物化并带版本；</li>
+<li>至少一次投递配合稳定 ID 和幂等写入；</li>
+<li>迟到和失败进入可观测旁路，不能静默丢弃；</li>
+<li>任何异常都保留当前值、基线值、版本、窗口和原始证据引用；</li>
+<li>数据不足时输出“不确定或未成熟”，不能把没有数据解释成正常。</li>
+</ol>
+<h2>21. 主要官方资料</h2>
+<ul>
+<li>OpenTelemetry：<a href="https://opentelemetry.io/docs/collector/architecture/">Collector architecture</a>、<a href="https://opentelemetry.io/docs/collector/resiliency/">Resiliency</a>、<a href="https://opentelemetry.io/docs/collector/internal-telemetry/">Internal telemetry</a>。</li>
+<li>Apache Kafka：<a href="https://kafka.apache.org/41/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html">Producer API</a>、<a href="https://kafka.apache.org/40/design/design/">Design and delivery semantics</a>。</li>
+<li>OpenSearch：<a href="https://docs.opensearch.org/latest/data-prepper/">Data Prepper</a>、<a href="https://docs.opensearch.org/latest/data-prepper/pipelines/pipelines/">Data Prepper pipelines</a>、<a href="https://docs.opensearch.org/latest/data-prepper/pipelines/configuration/sinks/opensearch/">OpenSearch sink</a>、<a href="https://docs.opensearch.org/latest/im-plugin/ism/index/">Index State Management</a>。</li>
+<li>ClickHouse：<a href="https://clickhouse.com/integrations/kafka">Kafka integration</a>、<a href="https://clickhouse.com/blog/clickstack-faster-observability">Incremental materialized views</a>、<a href="https://clickhouse.com/blog/10-best-practice-tips">Materialized view design cautions</a>。</li>
+<li>Apache Flink：<a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/learn-flink/streaming_analytics/">Streaming analytics and event time</a>、<a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/event-time/generating_watermarks/">Generating watermarks</a>、<a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/fault-tolerance/state/">Keyed State</a>、<a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/fault-tolerance/checkpointing/">Checkpointing</a>。</li>
+</ul>
+</section><section id="part-09"><h1>Splunk 数据进入流程总结</h1>
+<h2>1. 一句话结论</h2>
+<p>Splunk 的数据进入不是“Forwarder 把文件上传到数据库”，而是一条由输入、解析、索引和搜索四个阶段组成的流水线：源端日志先由 Universal Forwarder 或其他输入组件读取，必要时由 Heavy Forwarder 解析和路由，随后由 Indexer 切分事件、确定时间和元数据、写入原文与索引文件；用户搜索时，再由 Search Head 与 Indexer 应用字段提取、lookup、eventtype、tag 和 CIM 等知识对象，把已索引事件解释为可分析数据。</p>
+<pre><code class="language-text">数据源
+  → Universal Forwarder / 输入端
+  → 可选 Intermediate/Heavy Forwarder
+  → Indexer / Indexer Cluster
+  → Bucket：rawdata + tsidx + metadata
+  → Search Head 发起搜索
+  → 搜索时字段、lookup、tag、CIM
+  → 检测、摘要、UEBA 特征、风险与调查
+</code></pre>
+<p>【事实】Splunk 官方将数据管道划分为 Input、Parsing、Indexing 和 Search 四个阶段；典型部署由数据输入层、索引层和搜索管理层承载这些阶段。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.0/overview-of-splunk-enterprise-distributed-deployments/how-data-moves-through-splunk-deployments-the-data-pipeline">1</a></p>
+<h2>2. 组件与阶段对应</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>数据管道阶段</th>
+<th>主要工作</th>
+<th>可承担的 Splunk 组件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Input</td>
+<td>读取文件、事件通道、网络流或 API 数据，增加基础来源元数据</td>
+<td>Universal Forwarder、Heavy Forwarder、Indexer</td>
+</tr>
+<tr>
+<td>Parsing</td>
+<td>事件切分、行合并、时间戳、路由、过滤和部分结构化解析</td>
+<td>Heavy Forwarder、Indexer</td>
+</tr>
+<tr>
+<td>Indexing</td>
+<td>压缩原文、生成索引文件、写入 bucket、执行副本流程</td>
+<td>Indexer</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>搜索时字段提取、别名、lookup、eventtype、tag、CIM、SPL 执行</td>
+<td>Indexer、Search Head</td>
+</tr>
+</tbody></table></div>
+<p>【事实】大多数部署由 Forwarder 处理输入，Indexer 处理解析和索引；Heavy Forwarder 可以在发送前完成解析，此时接收端 Indexer 主要执行索引阶段。Universal Forwarder 通常只做轻量处理，但结构化输入等场景存在例外。<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">2</a></p>
+<h2>3. 第一步：数据源产生原始记录</h2>
+<p>Splunk 可以接入日志文件、Windows Event Log、Syslog、HTTP、脚本或模块化输入等数据。源端记录首先是事实，并不是检测结论。例如：</p>
+<pre><code class="language-text">Windows 4624         → 一次登录成功记录
+Windows 4728         → 一次组成员添加记录
+Zeek conn            → 一次网络连接记录
+VPN 登录日志          → 一次远程访问记录
+文件审计              → 一次文件访问记录
+</code></pre>
+<p>进入 Splunk 前应先确认：源端确实产生了事件、源时间是否可信、日志轮转和保留是否足够、网络型输入是否存在无重传风险。源端没有产生的事实，后续字段映射和 UEBA 模型无法补造。</p>
+<h2>4. 第二步：Universal Forwarder 采集</h2>
+<p>Universal Forwarder，UF，通常部署在数据源附近。主要职责包括：</p>
+<ul>
+<li>根据 <code>inputs.conf</code> 读取文件、Windows 事件等输入；</li>
+<li>标记 <code>host</code>、<code>source</code>、<code>sourcetype</code> 等基础元数据；</li>
+<li>保存文件或输入读取进度；</li>
+<li>根据 <code>outputs.conf</code> 把数据发给 Indexer 或中间转发层；</li>
+<li>在多个接收端之间负载均衡和故障切换；</li>
+<li>根据 Deployment Server 下发的应用和配置更新采集行为。</li>
+</ul>
+<pre><code class="language-text">源文件 / Windows 事件通道
+  → inputs.conf 选择输入
+  → UF 读取并维护检查点
+  → 添加 host/source/sourcetype
+  → 输出队列
+  → outputs.conf 指定接收端
+</code></pre>
+<p>UF 的读取进度、输出队列和 Indexer 写盘状态不是同一件事。生产验证不能只检查 UF 进程运行，还要检查最后事件时间、读取位置、输出阻塞、目标连接和 Indexer 接收量。</p>
+<h2>5. 第三步：可选的中间或 Heavy Forwarder</h2>
+<p>对于跨网络区域、集中路由、过滤、脱敏或协议汇聚，可在 UF 与 Indexer 之间部署 Intermediate Forwarder 或 Heavy Forwarder，HF。</p>
+<pre><code class="language-text">UF
+  → HF：解析、过滤、路由、索引选择
+  → Indexer
+</code></pre>
+<p>HF 能承担完整或较多的 Parsing 工作，包括事件切分、时间戳和索引时转换。若 HF 已经完成解析，Indexer 不应对同一数据再次执行不兼容的解析配置。</p>
+<p>部署时要明确每项配置在哪一层生效：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>配置</th>
+<th>常见职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inputs.conf</code></td>
+<td>选择采集对象和输入参数</td>
+</tr>
+<tr>
+<td><code>outputs.conf</code></td>
+<td>指定接收端、负载均衡和 ACK</td>
+</tr>
+<tr>
+<td><code>props.conf</code></td>
+<td>时间、事件切分、字段别名、计算字段等；具体阶段由 stanza 决定</td>
+</tr>
+<tr>
+<td><code>transforms.conf</code></td>
+<td>路由、过滤、字段转换和 lookup 定义</td>
+</tr>
+<tr>
+<td><code>indexes.conf</code></td>
+<td>索引、bucket 路径、大小及生命周期</td>
+</tr>
+<tr>
+<td><code>deploymentclient.conf</code></td>
+<td>接收 Deployment Server 配置</td>
+</tr>
+</tbody></table></div>
+<p>配置必须部署到真正执行对应阶段的组件。只把索引时解析配置装到 Search Head，不会改变 Indexer 已写入的事件边界和时间戳。</p>
+<h2>6. 第四步：可靠转发与 Indexer acknowledgment</h2>
+<p>默认转发不能简单理解为全链路不丢不重。对可靠性要求较高的 Splunk Enterprise 部署，可以在 Forwarder 的 <code>outputs.conf</code> 中开启 Indexer acknowledgment：</p>
+<pre><code class="language-ini">[tcpout:indexer_group]
+server = idx01:9997,idx02:9997,idx03:9997
+useACK = true
+</code></pre>
+<p>确认链路为：</p>
+<pre><code class="language-text">Forwarder 发送数据块
+  → 在 wait queue 中保留副本
+  → Indexer 接收
+  → Indexer 解析
+  → 写入 rawdata 和索引数据
+  → Indexer 返回 ACK
+  → Forwarder 释放对应数据块
+</code></pre>
+<p>【事实】Splunk 官方说明，开启 ACK 后 Forwarder 会在 wait queue 中保留数据块，直到 Indexer 成功写入文件系统并返回确认；该功能默认关闭。<a href="https://help.splunk.com/en/splunk-enterprise/forward-and-process-data/forwarding-and-receiving-data/9.4/perform-advanced-configuration/protect-against-loss-of-in-flight-data">3</a></p>
+<p>ACK 提高在途数据可靠性，但不等于绝对 exactly-once。若写入已成功而确认丢失，重发可能造成重复；官方也提示 Indexer acknowledgment 在特定故障情况下可能产生重复事件。<a href="https://help.splunk.com/en/splunk-enterprise/administer/manage-indexers-and-indexer-clusters/10.4/get-data-into-the-indexer-cluster/connect-forwarders-directly-to-peer-nodes">4</a></p>
+<p>Splunk 还为部分输入提供 Persistent Queue：内存输入队列积压后可以写磁盘，但不是所有输入都支持；尚在内存或解析/索引管道且未写盘的数据仍存在崩溃丢失边界。<a href="https://help.splunk.com/en/splunk-cloud-platform/get-started/get-data-in/10.0.2503/improve-the-data-input-process/use-persistent-queues-to-help-prevent-data-loss">5</a></p>
+<h2>7. 第五步：Parsing 解析</h2>
+<p>Parsing 通常在 Indexer 上执行；使用 HF 时也可提前执行。主要内容包括：</p>
+<ol>
+<li>将连续字节流切分成事件；</li>
+<li>合并多行事件；</li>
+<li>提取或确定事件时间；</li>
+<li>确定 <code>host</code>、<code>source</code>、<code>sourcetype</code>；</li>
+<li>决定目标 index；</li>
+<li>执行索引时过滤、路由和脱敏；</li>
+<li>对部分结构化输入进行索引时字段提取。</li>
+</ol>
+<p>【事实】Splunk 官方列出的索引时处理包括默认元数据、时间戳、line breaking、事件分段、结构化字段提取以及自定义索引时字段提取。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">6</a></p>
+<p>解析阶段存在三类高影响错误：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>错误</th>
+<th>后果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>事件边界错误</td>
+<td>多条事件被合并或一条事件被拆开</td>
+</tr>
+<tr>
+<td>时间戳错误</td>
+<td>事件进入错误时间范围，搜索和 UEBA 窗口失真</td>
+</tr>
+<tr>
+<td>sourcetype/index 错误</td>
+<td>错误规则生效或目标数据无法被预期搜索命中</td>
+</tr>
+</tbody></table></div>
+<p>这些问题一旦随事件写入，通常不能只靠修改 Search Head 查询完整修复；需要重新索引或在搜索时做有限补偿。</p>
+<h2>8. 第六步：Indexer 写入 bucket</h2>
+<p>Indexer 将解析后的事件写入索引。一个 bucket 概念上包含：</p>
+<pre><code class="language-text">bucket
+  ├── rawdata：压缩原始事件
+  ├── tsidx：词项/字段值到原始事件位置的索引信息
+  └── metadata：时间范围和 bucket 元数据
+</code></pre>
+<p>Indexer 同时也是 Search Peer：不仅存储数据，还执行 Search Head 分发的过滤、字段处理和局部聚合。</p>
+<p>索引通常经历：</p>
+<pre><code class="language-text">hot → warm → cold → frozen/deleted
+</code></pre>
+<p>hot bucket 正在写入；warm bucket 已滚动并保持可搜索；cold bucket 仍可搜索但可位于不同存储；frozen 通常退出常规搜索，需要归档/恢复策略。SmartStore 场景使用远端对象存储和本地缓存，不应简单等同于传统 cold 目录。</p>
+<h2>9. 第七步：Indexer Cluster 副本</h2>
+<p>Indexer Cluster 按 bucket 复制。需要区分：</p>
+<ul>
+<li>Replication Factor：数据副本数量；</li>
+<li>Search Factor：立即可搜索副本数量。</li>
+</ul>
+<p>搜索只应使用一份主可搜索 bucket 副本，避免同一事件因副本而重复出现在结果中。当节点失败时，集群管理层重新选择主副本或恢复可搜索副本。</p>
+<p>副本用于可用性，不等于备份。误删除、错误配置和污染数据可能影响多个副本，仍需独立备份和恢复验证。</p>
+<h2>10. 第八步：Search Head 发起分布式搜索</h2>
+<p>Search Head 保存或管理 SPL、知识对象、Dashboard、计划任务和用户交互。搜索过程概念上是：</p>
+<pre><code class="language-text">用户或 Scheduler 发起 SPL
+  → Search Head 解析搜索任务
+  → 把可分布部分下发到 Indexer/Search Peer
+  → Indexer 按 index、时间和词项筛选事件
+  → Indexer 执行可分布字段处理和局部聚合
+  → Search Head 汇总结果
+  → 展示、告警或写入派生数据
+</code></pre>
+<p>限制 index、sourcetype、时间和高选择性条件越早，通常越能减少读取与网络汇总。全局排序、高基数聚合、大规模 Join 和复杂搜索时正则可能把更多工作集中到 Search Head。</p>
+<h2>11. 第九步：搜索时字段与 CIM 标准化</h2>
+<p>Splunk 的很多字段语义并不是在写入时物理固化，而是在搜索时通过知识对象应用：</p>
+<ul>
+<li>搜索时字段提取；</li>
+<li><code>FIELDALIAS</code>；</li>
+<li><code>EVAL-*</code> 计算字段；</li>
+<li>lookup；</li>
+<li>eventtype；</li>
+<li>tag；</li>
+<li>CIM Data Model。</li>
+</ul>
+<p>【事实】Splunk 官方把字段提取、字段别名、lookup、eventtype 和 tag 等列为搜索时处理，并建议一般优先在搜索时完成知识构建，因为过多索引时字段会增加写入及索引成本。<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">6</a></p>
+<p>示例：</p>
+<pre><code class="language-text">Zeek 原字段
+  id_orig_h / id_resp_h / orig_ip_bytes
+       ↓ FIELDALIAS
+  src / dest / bytes_out
+       ↓ eventtype + tag
+  CIM Network_Traffic
+       ↓
+  tstats、检测和 UEBA 特征搜索
+</code></pre>
+<p>CIM 是语义契约，不是消息 Topic，也不会创造缺失信息。只有 IP 而没有用户身份的 Zeek 事件，不能靠别名自动得到可信 <code>user</code>。</p>
+<h2>12. 第十步：摘要、特征与 UEBA 衔接</h2>
+<p>事件可搜索后，后台计算才进一步生成摘要、特征和安全结果。</p>
+<h3>12.1 Data Model Acceleration</h3>
+<pre><code class="language-text">原始索引事件
+  → 后台 Summarization Search
+  → Indexer 上的 DMA tsidx Summary
+  → tstats 快速访问标准化字段
+</code></pre>
+<p>【事实】Data Model Acceleration 在 Indexer 层、源 bucket 旁构建 <code>.tsidx</code> 摘要，用于加速针对数据模型字段的分析；摘要有自己的范围、更新周期和可能的滞后。<a href="https://help.splunk.com/en/splunk-enterprise/manage-knowledge-objects/knowledge-management-manual/10.2/use-data-summaries-to-accelerate-searches/accelerate-data-models">7</a></p>
+<h3>12.2 ES 内置 UEBA</h3>
+<p>公开的知识对象显示，ES UEBA 由多类保存搜索组成：</p>
+<pre><code class="language-text">可分析事件/CIM
+  → Summarization Search
+  → Consolidation Search
+  → Feature Search
+  → Scoring Search
+  → Intermediate Finding / Finding
+  → Risk / ERS / 调查
+</code></pre>
+<p>KV Store 跟踪特征值、相关身份和资产；Macro 封装字段映射、特征计算和评分逻辑。<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.4/user-and-entity-behavior-analytics/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">8</a></p>
+<p>这说明日志成功写入 Indexer 还不等于 UEBA 已经计算完成。后续仍受 CIM 覆盖、摘要进度、计划搜索、KV 状态、特征成熟度和评分任务影响。</p>
+<h2>13. 一条 Windows 登录事件的完整路径</h2>
+<pre><code class="language-text">1. DC01 产生 Security 4624
+2. UF 的 WinEventLog Input 读取事件并维护读取进度
+3. UF 添加 host/source/sourcetype/index 元数据
+4. UF 通过 outputs.conf 发送到 Indexer Cluster
+5. 若 useACK=true，UF 在 wait queue 保留数据块
+6. Indexer 接收并执行事件时间、边界和元数据解析
+7. Indexer 把原文和 tsidx 写入目标 bucket
+8. Indexer 返回 ACK，UF 释放数据块
+9. Search Head 查询该时间范围
+10. 搜索时字段提取生成 user、src、action 等字段
+11. eventtype/tag 将事件纳入 Authentication CIM
+12. DMA/摘要搜索可建立加速数据
+13. UEBA Feature/Scoring Search 读取事件或摘要
+14. 产生行为特征、异常或中间 Finding
+15. 风险规则把结果关联到 user/system 实体
+16. Mission Control、Dashboard 或调查页呈现证据
+</code></pre>
+<p>其中任何一层失败都可能表现为“没有告警”：源端未产生、UF 未读取、队列阻塞、解析错误、写入错误、字段缺失、CIM 未命中、摘要落后、任务未运行、KV 状态不成熟或被例外规则排除。</p>
+<h2>14. Splunk 可靠性边界总结</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>Splunk 提供的机制</th>
+<th>仍需验证的边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>源端断点续采</td>
+<td>文件/输入检查点</td>
+<td>日志轮转、覆盖、检查点丢失</td>
+</tr>
+<tr>
+<td>网络中断</td>
+<td>Forwarder 队列、重连和负载均衡</td>
+<td>队列容量及最长中断时间</td>
+</tr>
+<tr>
+<td>写入确认</td>
+<td>Indexer acknowledgment</td>
+<td>ACK 丢失可能重发和重复</td>
+</tr>
+<tr>
+<td>瞬时积压</td>
+<td>内存/部分输入的 Persistent Queue</td>
+<td>内存数据和不支持的输入</td>
+</tr>
+<tr>
+<td>Indexer 故障</td>
+<td>Cluster bucket 副本</td>
+<td>恢复期间性能和可搜索副本</td>
+</tr>
+<tr>
+<td>历史恢复</td>
+<td>bucket、归档、SmartStore/备份</td>
+<td>恢复时间和配置一致性</td>
+</tr>
+<tr>
+<td>迟到数据</td>
+<td>SPL 时间窗、调度延迟、补跑</td>
+<td>没有与 Flink Watermark 完全相同的通用抽象</td>
+</tr>
+<tr>
+<td>数据完整性</td>
+<td>Internal logs、Monitoring Console、审计</td>
+<td>必须另做源端到索引端事件数与字段覆盖对账</td>
+</tr>
+</tbody></table></div>
+<p>不能笼统声称 Splunk 全链路 exactly-once。更准确的表述是：Splunk 提供检查点、队列、ACK、集群副本和补跑机制降低丢失风险，但仍要针对输入协议、队列、失败时点和重复事件进行实测。</p>
+<h2>15. 上线核对清单</h2>
+<ol>
+<li>先确认源端事件确实产生，并记录源端事件数和最后时间；</li>
+<li>验证 <code>inputs.conf</code> 的通道、路径、过滤和目标 index；</li>
+<li>验证 <code>host</code> 表示原始事件主机，尤其是 WEF 和中转场景；</li>
+<li>确认解析发生在 HF 还是 Indexer，并把配置部署到正确层；</li>
+<li>检查时间戳、事件边界、sourcetype 和原始文本；</li>
+<li>根据可靠性要求开启并验证 <code>useACK</code>；</li>
+<li>测试网络中断、UF/HF/Indexer 重启后的漏采和重复；</li>
+<li>验证 Indexer Cluster 的 RF、SF、负载均衡和故障恢复；</li>
+<li>核对字段提取、别名、lookup、eventtype、tag 和 CIM 命中；</li>
+<li>检查 DMA Summary Range、更新时间和 Summarization Lag；</li>
+<li>检查 UEBA 保存搜索、KV Store、特征和评分更新时间；</li>
+<li>对“源端 → UF → Indexer → CIM → UEBA”建立事件数、延迟和关键字段覆盖率监控。</li>
+</ol>
+<h2>16. 最终总结</h2>
+<p>Splunk 的数据进入可以归纳为三次转换：</p>
+<pre><code class="language-text">第一次：字节或记录 → 可索引事件
+由 UF/HF/Indexer 的 Input 和 Parsing 完成
+
+第二次：可索引事件 → 可搜索知识
+由 Indexer 存储、Search Head、字段提取、lookup 和 CIM 完成
+
+第三次：可搜索知识 → 安全证据和行为结果
+由 DMA、Scheduled Search、UEBA Feature/Scoring、RBA 和 ERS 完成
+</code></pre>
+<p>第一阶段错误会影响原始事实，第二阶段错误会影响数据语义，第三阶段错误会影响异常与风险判断。生产建设不能只验证“日志能搜到”，还必须验证事件边界和时间正确、字段语义一致、摘要没有明显滞后、特征计算完成，并能从最终异常回查到原始证据。</p>
+<h2>17. 主要官方资料</h2>
+<ul>
+<li>Splunk，<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.0/overview-of-splunk-enterprise-distributed-deployments/how-data-moves-through-splunk-deployments-the-data-pipeline">How data moves through Splunk deployments: The data pipeline</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/splunk-enterprise/administer/distributed-deployment-manual/9.1/overview-of-splunk-enterprise-distributed-deployments/components-and-the-data-pipeline">Components and the data pipeline</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/data-management/manage-splunk-enterprise-indexers/9.3/indexing-overview/index-time-versus-search-time">Index time versus search time</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/splunk-enterprise/forward-and-process-data/forwarding-and-receiving-data/9.4/perform-advanced-configuration/protect-against-loss-of-in-flight-data">Protect against loss of in-flight data</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/splunk-cloud-platform/get-started/get-data-in/10.0.2503/improve-the-data-input-process/use-persistent-queues-to-help-prevent-data-loss">Persistent queues</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/splunk-enterprise/manage-knowledge-objects/knowledge-management-manual/10.2/use-data-summaries-to-accelerate-searches/accelerate-data-models">Accelerate data models</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.4/user-and-entity-behavior-analytics/roles-and-knowledge-objects-in-ueba-for-splunk-enterprise-security">Roles and knowledge objects in UEBA for Splunk Enterprise Security</a>。</li>
+</ul>
+</section><section id="part-10"><h1>Splunk CIM、Zeek 映射与 Dataset 参考</h1>
+<h2>1. 文档范围与结论</h2>
+<p>本册汇总三个互相关联但不能混为一谈的对象：</p>
+<pre><code class="language-text">CIM Data Model：定义一个分析领域，例如网络流量或认证
+Dataset：在模型内定义具体事件集合、继承关系、字段和计算
+TA/Add-on：把厂商原始字段、eventtype 和 tag 映射到 CIM
+</code></pre>
+<p>对 Zeek 而言，一条事件进入 CIM 的主要判断链是：</p>
+<pre><code class="language-text">sourcetype
+  → eventtypes.conf 匹配 eventtype
+  → tags.conf 为 eventtype 增加 tag
+  → CIM Dataset constraint 检查 tag/字段条件
+  → props.conf 的 FIELDALIAS/EVAL/LOOKUP 提供 CIM 字段
+</code></pre>
+<p>Dataset Constraint 决定事件是否属于模型集合；字段映射决定事件进入后有哪些可分析字段；具体检测还会提出额外字段、取值、时间范围和质量要求。</p>
+<p>【事实】Splunk 官方把 CIM 定义为面向搜索时数据规范化的共享语义模型。CIM Add-on 包含预配置 Data Model、字段、Tag、文档和验证工具；原始机器数据可以保持不变。<a href="https://help.splunk.com/en/data-management/common-information-model/8.5/introduction/overview-of-the-splunk-common-information-model">1</a></p>
+<h2>2. 本地证据范围</h2>
+<p>本册以仓库中的以下配置为实际证据：</p>
+<ul>
+<li><code>Splunk_SA_CIM/default/app.conf</code>：本地 CIM 版本为 8.7.0；</li>
+<li><code>Splunk_SA_CIM/default/data/models/*.json</code>：模型、Dataset、字段、计算和约束；</li>
+<li><code>Splunk_TA_zeek/default/app.conf</code>：Corelight Add-on for Zeek 1.0.11；</li>
+<li><code>Splunk_TA_zeek/default/eventtypes.conf</code>：sourcetype 到 eventtype；</li>
+<li><code>Splunk_TA_zeek/default/tags.conf</code>：eventtype 到 tag；</li>
+<li><code>Splunk_TA_zeek/default/props.conf</code>：字段别名、EVAL 和 lookup 调用；</li>
+<li><code>Splunk_TA_zeek/default/transforms.conf</code> 与 lookup CSV：连接状态等值映射。</li>
+</ul>
+<p>官网当前文档和本地 8.7.0 文件可能存在版本差异。本册涉及本地 Zeek 映射时以本地配置为准，不把官网其他版本的字段清单强行覆盖到本地文件。</p>
+<h2>3. 本地 CIM 数据模型总表</h2>
+<p>本地目录共有 27 个 JSON 模型文件，包括正式业务模型、2 个已废弃模型和 CIM 验证模型。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>模型</th>
+<th>中文含义</th>
+<th>主要用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Alerts</td>
+<td>告警</td>
+<td>安全产品告警、严重度和描述</td>
+</tr>
+<tr>
+<td>Authentication</td>
+<td>认证</td>
+<td>登录、注销、成功、失败和认证方式</td>
+</tr>
+<tr>
+<td>Certificates</td>
+<td>证书</td>
+<td>X.509、签发者、主体、有效期和指纹</td>
+</tr>
+<tr>
+<td>Change</td>
+<td>变更</td>
+<td>账号、权限、策略、系统和资源变更</td>
+</tr>
+<tr>
+<td>Compute Inventory</td>
+<td>计算资源清单</td>
+<td>主机、OS、CPU、内存、网络和存储资产</td>
+</tr>
+<tr>
+<td>Data Access</td>
+<td>数据访问</td>
+<td>对数据对象的读取、写入和操作</td>
+</tr>
+<tr>
+<td>Databases</td>
+<td>数据库</td>
+<td>数据库实例、查询、会话和性能</td>
+</tr>
+<tr>
+<td>Data Loss Prevention</td>
+<td>数据防泄漏</td>
+<td>DLP 命中、敏感数据和处置动作</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>邮件</td>
+<td>发件人、收件人、附件和投递</td>
+</tr>
+<tr>
+<td>Endpoint</td>
+<td>终端</td>
+<td>进程、服务、文件、端口和注册表</td>
+</tr>
+<tr>
+<td>Event Signatures</td>
+<td>事件签名</td>
+<td>签名、签名 ID 和分类</td>
+</tr>
+<tr>
+<td>Interprocess Messaging</td>
+<td>进程间通信</td>
+<td>IPC 行为和消息</td>
+</tr>
+<tr>
+<td>Intrusion Detection</td>
+<td>入侵检测</td>
+<td>IDS/IPS 攻击事件</td>
+</tr>
+<tr>
+<td>Inventory</td>
+<td>资产清单</td>
+<td>本地文件名为 <code>Compute_Inventory.json</code>，显示名为 Inventory</td>
+</tr>
+<tr>
+<td>JVM</td>
+<td>Java 虚拟机</td>
+<td>内存、线程、GC 和运行状态</td>
+</tr>
+<tr>
+<td>Malware</td>
+<td>恶意软件</td>
+<td>恶意文件、感染和处置</td>
+</tr>
+<tr>
+<td>Network Resolution</td>
+<td>网络解析</td>
+<td>DNS 查询、响应和返回码</td>
+</tr>
+<tr>
+<td>Network Sessions</td>
+<td>网络会话</td>
+<td>DHCP、VPN 和会话开始/结束</td>
+</tr>
+<tr>
+<td>Network Traffic</td>
+<td>网络流量</td>
+<td>源/目的、端口、协议、字节和动作</td>
+</tr>
+<tr>
+<td>Performance</td>
+<td>性能</td>
+<td>CPU、内存、磁盘、网络和设施指标</td>
+</tr>
+<tr>
+<td>Splunk Audit Logs</td>
+<td>Splunk 审计</td>
+<td>Splunk 管理、搜索和模块化动作审计</td>
+</tr>
+<tr>
+<td>Ticket Management</td>
+<td>工单管理</td>
+<td>事件、问题和变更工单</td>
+</tr>
+<tr>
+<td>Updates</td>
+<td>更新</td>
+<td>补丁、软件和签名更新</td>
+</tr>
+<tr>
+<td>Vulnerabilities</td>
+<td>漏洞</td>
+<td>漏洞、CVE、资产和严重度</td>
+</tr>
+<tr>
+<td>Web</td>
+<td>Web/代理</td>
+<td>URL、HTTP、代理和存储访问</td>
+</tr>
+<tr>
+<td>Application State</td>
+<td>应用状态</td>
+<td>已废弃，相关能力由 Endpoint 等模型取代</td>
+</tr>
+<tr>
+<td>Change Analysis</td>
+<td>变更分析</td>
+<td>已废弃，由 Change 模型取代</td>
+</tr>
+<tr>
+<td>CIM Validation</td>
+<td>CIM 验证</td>
+<td>检查未打 Tag 或缺失提取，不是业务日志模型</td>
+</tr>
+</tbody></table></div>
+<p>Splunk 官方说明，模型 JSON 位于 <code>$SPLUNK_HOME/etc/apps/Splunk_SA_CIM/default/data/models</code>；Data Model Editor 和 JSON 能显示完整层级、约束、继承字段、计算和类型。<a href="https://help.splunk.com/en/splunk-cloud-platform/common-information-model/6.2/data-models/how-to-use-the-cim-data-model-reference-tables">2</a></p>
+<h2>4. 当前 UEBA 优先使用的 CIM</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th align="right">优先级</th>
+<th>模型</th>
+<th>UEBA 用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">P0</td>
+<td>Authentication</td>
+<td>登录频率、失败、首次设备、位置和时间异常</td>
+</tr>
+<tr>
+<td align="right">P0</td>
+<td>Network Traffic</td>
+<td>对外流量、连接数、稀有目的地、扫描和横向连接</td>
+</tr>
+<tr>
+<td align="right">P0</td>
+<td>Endpoint</td>
+<td>进程、服务、文件和终端行为链</td>
+</tr>
+<tr>
+<td align="right">P0</td>
+<td>Change</td>
+<td>账号创建、组变更、提权和策略修改</td>
+</tr>
+<tr>
+<td align="right">P1</td>
+<td>Web</td>
+<td>URL、代理、上传下载和域名行为</td>
+</tr>
+<tr>
+<td align="right">P1</td>
+<td>Email</td>
+<td>外部收件人、附件和邮件外发</td>
+</tr>
+<tr>
+<td align="right">P1</td>
+<td>Data Access</td>
+<td>文件、数据库和云存储对象访问</td>
+</tr>
+<tr>
+<td align="right">P1</td>
+<td>Network Sessions</td>
+<td>VPN、DHCP 和远程会话</td>
+</tr>
+<tr>
+<td align="right">P1</td>
+<td>Network Resolution</td>
+<td>罕见域名、NXDOMAIN、DGA 和 DNS 隧道迹象</td>
+</tr>
+<tr>
+<td align="right">P1</td>
+<td>DLP</td>
+<td>敏感内容命中和阻断证据</td>
+</tr>
+<tr>
+<td align="right">P2</td>
+<td>Alerts/IDS/Malware</td>
+<td>融合外部告警和安全判定</td>
+</tr>
+<tr>
+<td align="right">P2</td>
+<td>Inventory/Vulnerabilities</td>
+<td>资产和漏洞上下文</td>
+</tr>
+</tbody></table></div>
+<p>ES 本地 UEBA 的公开数据要求重点涉及 Authentication、Network Traffic、Web、Change、Endpoint 和 Email。模型存在并不表示任意数据源已经通过该 UEBA 内容的生产验证。</p>
+<h2>5. Zeek 到 CIM 的完整判断链</h2>
+<p>以 <code>zeek:conn</code> 为例：</p>
+<h3>5.1 sourcetype 命中 Event Type</h3>
+<p>本地 <code>eventtypes.conf</code>：</p>
+<pre><code class="language-ini">[zeek_network_traffic]
+search = sourcetype IN (zeek:conn) OR eventtype IN (bro_conn)
+</code></pre>
+<p>因此 <code>sourcetype=zeek:conn</code> 在搜索时命中：</p>
+<pre><code class="language-text">eventtype=zeek_network_traffic
+</code></pre>
+<h3>5.2 Event Type 获得 Tag</h3>
+<p>本地 <code>tags.conf</code>：</p>
+<pre><code class="language-ini">[eventtype=zeek_network_traffic]
+network     = enabled
+communicate = enabled
+</code></pre>
+<p>事件因此获得：</p>
+<pre><code class="language-text">tag=network
+tag=communicate
+</code></pre>
+<h3>5.3 Dataset 检查 Constraint</h3>
+<p>本地 <code>Network_Traffic.json</code> 的 <code>All_Traffic</code> 约束：</p>
+<pre><code class="language-spl">`cim_Network_Traffic_indexes` tag=network tag=communicate
+</code></pre>
+<p>本地默认宏 <code>cim_Network_Traffic_indexes</code> 定义为空约束，所以默认主要检查两个 Tag。若生产环境在 <code>local/macros.conf</code> 覆盖了该宏，还必须位于允许的 index。</p>
+<h3>5.4 搜索时生成 CIM 字段</h3>
+<p>本地 <code>props.conf</code> 的主要映射：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Zeek 字段</th>
+<th>CIM 字段</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id_orig_h</code></td>
+<td><code>src</code>、<code>src_ip</code></td>
+</tr>
+<tr>
+<td><code>id_orig_p</code></td>
+<td><code>src_port</code></td>
+</tr>
+<tr>
+<td><code>id_resp_h</code></td>
+<td><code>dest</code>、<code>dest_ip</code></td>
+</tr>
+<tr>
+<td><code>id_resp_p</code></td>
+<td><code>dest_port</code></td>
+</tr>
+<tr>
+<td><code>orig_ip_bytes</code></td>
+<td><code>bytes_out</code></td>
+</tr>
+<tr>
+<td><code>resp_ip_bytes</code></td>
+<td><code>bytes_in</code></td>
+</tr>
+<tr>
+<td><code>orig_pkts</code></td>
+<td><code>packets_out</code></td>
+</tr>
+<tr>
+<td><code>resp_pkts</code></td>
+<td><code>packets_in</code></td>
+</tr>
+<tr>
+<td><code>service</code></td>
+<td><code>app</code></td>
+</tr>
+<tr>
+<td><code>uid</code></td>
+<td><code>flow_id</code>、<code>session_id</code></td>
+</tr>
+<tr>
+<td><code>proto</code></td>
+<td><code>transport</code></td>
+</tr>
+</tbody></table></div>
+<p>并计算：</p>
+<pre><code class="language-text">bytes = bytes_out + bytes_in
+packets = packets_out + packets_in
+vendor_product = &quot;Zeek&quot;
+</code></pre>
+<p>所以完整链路是：</p>
+<pre><code class="language-text">zeek:conn
+  → zeek_network_traffic
+  → network + communicate
+  → Network_Traffic.All_Traffic
+  → 使用 src、dest、bytes_out、action 等字段分析
+</code></pre>
+<h2>6. 当前 <code>zeek:*</code> sourcetype 与 CIM 映射表</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Sourcetype</th>
+<th>Event Type 链</th>
+<th>Tag</th>
+<th>CIM Dataset</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>zeek:conn</code></td>
+<td><code>zeek_network_traffic</code></td>
+<td><code>network</code>, <code>communicate</code></td>
+<td><code>Network_Traffic.All_Traffic</code></td>
+</tr>
+<tr>
+<td><code>zeek:dns</code></td>
+<td><code>zeek_dns</code></td>
+<td><code>network</code>, <code>resolution</code>, <code>dns</code></td>
+<td><code>Network_Resolution.DNS</code></td>
+</tr>
+<tr>
+<td><code>zeek:http</code></td>
+<td><code>zeek_web</code></td>
+<td><code>web</code>, <code>proxy</code>, <code>storage</code></td>
+<td><code>Web.Web</code>、<code>Web.Proxy</code>、<code>Web.Storage</code></td>
+</tr>
+<tr>
+<td><code>zeek:http</code> 且用户名、密码条件成立</td>
+<td><code>zeek_web_auth</code> → <code>zeek_authentication</code></td>
+<td><code>authentication</code>, <code>cleartext</code></td>
+<td><code>Authentication.Authentication</code>、<code>Insecure_Authentication</code></td>
+</tr>
+<tr>
+<td><code>zeek:ssh</code></td>
+<td><code>zeek_ssh</code> → <code>zeek_authentication</code></td>
+<td><code>authentication</code>, <code>cleartext</code></td>
+<td><code>Authentication.Authentication</code>、<code>Insecure_Authentication</code></td>
+</tr>
+<tr>
+<td><code>zeek:ntlm</code></td>
+<td><code>zeek_authentication</code></td>
+<td><code>authentication</code>, <code>cleartext</code></td>
+<td><code>Authentication.Authentication</code>、<code>Insecure_Authentication</code></td>
+</tr>
+<tr>
+<td><code>zeek:ssl</code></td>
+<td><code>zeek_certificates</code></td>
+<td><code>certificate</code>, <code>ssl</code>, <code>tls</code></td>
+<td><code>Certificates.All_Certificates</code>、<code>Certificates.SSL</code></td>
+</tr>
+<tr>
+<td><code>zeek:x509</code></td>
+<td><code>zeek_certificates</code></td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>zeek:ocsp</code></td>
+<td><code>zeek_certificates</code></td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>zeek:files</code></td>
+<td><code>zeek_files</code></td>
+<td><code>endpoint</code>, <code>filesystem</code>, <code>report</code>, <code>attack</code>, <code>ids</code>, <code>malware</code></td>
+<td><code>Endpoint.Filesystem</code>、<code>Intrusion_Detection.IDS_Attacks</code>、<code>Malware.Malware_Attacks</code></td>
+</tr>
+<tr>
+<td><code>zeek:smb_files</code></td>
+<td><code>zeek_files</code></td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>zeek:smb_mapping</code></td>
+<td><code>zeek_files</code></td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>zeek:notice</code></td>
+<td><code>zeek_notice</code></td>
+<td><code>alert</code></td>
+<td><code>Alerts.Alerts</code></td>
+</tr>
+</tbody></table></div>
+<h3>6.1 HTTP 认证条件</h3>
+<p>本地规则为：</p>
+<pre><code class="language-spl">sourcetype IN (zeek:http)
+(NOT username IN (-) AND NOT password IN (-))
+</code></pre>
+<p>只有满足该条件的 HTTP 事件才继续获得 <code>authentication</code> 和 <code>cleartext</code> Tag。实际部署必须验证字段不存在、空值、<code>-</code> 和脱敏值的行为。</p>
+<h3>6.2 Connection Action 子 Dataset</h3>
+<p><code>zeek:conn</code> 通过 <code>conn_state</code> lookup 生成 <code>action</code>：</p>
+<pre><code class="language-text">SF/S1/OTH 等 → action=allowed
+S0/REJ 等    → action=blocked
+</code></pre>
+<p>对应继承关系：</p>
+<pre><code class="language-text">All_Traffic                         tag=network tag=communicate
+└── Traffic_By_Action              action=*
+    ├── Allowed_Traffic            action=allowed
+    └── Blocked_Traffic            action=blocked
+</code></pre>
+<p>因此 <code>action=allowed</code> 的一条事件同时属于父子三个 Dataset，但仍只有一条原始事件。</p>
+<h2>7. 旧版 <code>bro_*</code> 兼容映射</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Sourcetype</th>
+<th>CIM Dataset</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bro_conn</code>、<code>bro:conn:json</code></td>
+<td><code>Network_Traffic.All_Traffic</code></td>
+</tr>
+<tr>
+<td><code>bro_dns</code>、<code>bro:dns:json</code></td>
+<td><code>Network_Resolution.DNS</code></td>
+</tr>
+<tr>
+<td><code>bro_http</code>、<code>bro:http:json</code></td>
+<td><code>Web.Web</code>、<code>Web.Proxy</code>、<code>Web.Storage</code></td>
+</tr>
+<tr>
+<td><code>bro_files</code>、<code>bro:files:json</code></td>
+<td><code>Endpoint.Filesystem</code>、<code>IDS_Attacks</code>、<code>Malware_Attacks</code></td>
+</tr>
+<tr>
+<td><code>bro_ssl</code>、<code>bro:ssl:json</code></td>
+<td><code>Certificates.All_Certificates</code>、<code>Certificates.SSL</code></td>
+</tr>
+<tr>
+<td><code>bro_x509</code>、<code>bro:x509:json</code></td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>bro_ssh</code>、<code>bro:ssh:json</code></td>
+<td><code>Authentication.Authentication</code>、<code>Insecure_Authentication</code></td>
+</tr>
+<tr>
+<td><code>bro_smtp</code>、<code>bro:smtp:json</code></td>
+<td><code>Email.All_Email</code>、<code>Email.Delivery</code></td>
+</tr>
+<tr>
+<td><code>bro_smtp_entities</code>、<code>bro:smtp_entities:json</code></td>
+<td><code>Email.All_Email</code></td>
+</tr>
+<tr>
+<td><code>bro_dhcp</code>、<code>bro:dhcp:json</code></td>
+<td><code>Network_Sessions.All_Sessions</code>、<code>Network_Sessions.DHCP</code></td>
+</tr>
+<tr>
+<td><code>bro_notice</code>、<code>bro:notice:json</code></td>
+<td><code>Alerts.Alerts</code>、<code>Intrusion_Detection.IDS_Attacks</code></td>
+</tr>
+</tbody></table></div>
+<p>本地 <code>zeek:notice</code> 只有 <code>alert</code> Tag，而旧 <code>bro_notice</code> 还有 <code>ids</code> 和 <code>attack</code> Tag，所以二者并非完全等价。</p>
+<h2>8. 有字段配置但没有自动 CIM 映射的 Zeek 类型</h2>
+<p>以下 sourcetype 在本地 <code>props.conf</code> 中存在 stanza，但没有完整的 eventtype/tag 到 CIM 约束链：</p>
+<pre><code class="language-text">zeek:ftp              zeek:smtp            zeek:dhcp
+zeek:ntp              zeek:irc             zeek:rdp
+zeek:traceroute       zeek:tunnel          zeek:dpd
+zeek:software         zeek:weird           zeek:capture_loss
+zeek:reporter         zeek:dce_rpc         zeek:analyzer
+zeek:kerberos         zeek:smb_cmd         zeek:snmp
+zeek:quic             zeek:pe              zeek:known_certs
+zeek:known_hosts      zeek:known_services
+</code></pre>
+<p>“没有自动映射”表示当前本地 Add-on 未通过 Event Type/Tag 让其满足 CIM Constraint，不表示数据没有价值或不能自定义映射。尤其是旧 <code>bro_smtp</code>、<code>bro_dhcp</code> 有映射，而新的 <code>zeek:smtp</code>、<code>zeek:dhcp</code> 没有对应规则，应作为版本兼容性和本地补充项验证。</p>
+<h2>9. Tag 到 CIM Dataset 的核心规则</h2>
+<pre><code class="language-text">tag=alert
+  → Alerts.Alerts
+
+tag=authentication
+  → Authentication.Authentication
+
+tag=authentication + (tag=insecure OR tag=cleartext)
+  → Authentication.Insecure_Authentication
+
+tag=certificate
+  → Certificates.All_Certificates
+
+tag=certificate + (tag=ssl OR tag=tls)
+  → Certificates.SSL
+
+tag=endpoint + tag=filesystem
+  → Endpoint.Filesystem
+
+tag=ids + tag=attack
+  → Intrusion_Detection.IDS_Attacks
+
+tag=malware + tag=attack
+  → Malware.Malware_Attacks
+
+tag=network + tag=resolution + tag=dns
+  → Network_Resolution.DNS
+
+tag=network + tag=session
+  → Network_Sessions.All_Sessions
+
+tag=network + tag=session + tag=dhcp
+  → Network_Sessions.DHCP
+
+tag=network + tag=communicate
+  → Network_Traffic.All_Traffic
+
+tag=email
+  → Email.All_Email
+
+tag=email + tag=delivery
+  → Email.Delivery
+
+tag=web
+  → Web.Web
+
+tag=web + tag=proxy
+  → Web.Proxy
+
+tag=web + tag=storage
+  → Web.Storage
+</code></pre>
+<h2>10. Dataset 的作用</h2>
+<p>Dataset 是 Data Model 内带语义的事件集合，主要有五个作用：</p>
+<ol>
+<li>用 Constraint 选择属于该业务语义的事件；</li>
+<li>通过父子结构复用并细化约束；</li>
+<li>定义字段、字段类型和计算字段；</li>
+<li>为 SPL、Pivot、Dashboard 和检测提供稳定查询入口；</li>
+<li>启用 Data Model Acceleration 后，规定需要摘要的分析字段范围。</li>
+</ol>
+<p>例如：</p>
+<pre><code class="language-text">Authentication
+├── Failed_Authentication
+├── Successful_Authentication
+├── Default_Authentication
+├── Insecure_Authentication
+└── Privileged_Authentication
+</code></pre>
+<p>检测可以直接查询失败认证 Dataset，而不必知道底层来自 Windows、VPN、SSH 还是 Web：</p>
+<pre><code class="language-spl">| datamodel Authentication Failed_Authentication search
+</code></pre>
+<h2>11. 同一事件命中多个模型或 Dataset</h2>
+<p>必须区分原始事件、逻辑归属、摘要和检测结果：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>对象</th>
+<th>数量含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>原始事件</td>
+<td>通常仍为一条</td>
+</tr>
+<tr>
+<td>Event Type/Tag</td>
+<td>可以有多组</td>
+</tr>
+<tr>
+<td>CIM 模型归属</td>
+<td>可以有多个</td>
+</tr>
+<tr>
+<td>Dataset 归属</td>
+<td>可同时属于父级和多个符合约束的子级</td>
+</tr>
+<tr>
+<td>DMA 摘要</td>
+<td>不同加速模型可能分别维护摘要表示</td>
+</tr>
+<tr>
+<td>Finding/Risk Event</td>
+<td>取决于命中的检测，可能为零、一条或多条</td>
+</tr>
+</tbody></table></div>
+<p>例如本地 <code>zeek:files</code> 会获得多组 Tag，逻辑上可同时进入：</p>
+<pre><code class="language-text">Endpoint.Filesystem
+Intrusion_Detection.IDS_Attacks
+Malware.Malware_Attacks
+</code></pre>
+<p>这表示同一事件有三个模型视角，不是自动复制成三条 <code>_raw</code>。如果三个检测分别命中，则可能产生三条独立检测结果。</p>
+<p>需要特别注意：所有 <code>zeek:files</code> 被打上 <code>ids+attack</code>、<code>malware+attack</code> 并不自动证明每个文件都是攻击或恶意软件。进入模型是配置事实，安全结论还要检查 signature、notice、category、hash、action 和检测来源，防止语义过度映射。</p>
+<h2>12. Dataset 的字段缺失边界</h2>
+<p>事件满足 Tag Constraint 后，即使缺少部分字段也可能进入根 Dataset。例如 <code>All_Traffic</code> 的约束没有直接要求 <code>src=*</code>、<code>dest=*</code>、<code>bytes_out=*</code> 或 <code>user=*</code>。</p>
+<p>CIM 可把部分缺失字段补成 <code>unknown</code> 或 <code>0</code>，但必须区分：</p>
+<pre><code class="language-text">模型命中：满足 Constraint
+字段合规：字段名、类型和值符合 CIM
+检测可用：具体检测需要的字段真实完整
+</code></pre>
+<p>所以：</p>
+<pre><code class="language-text">进入 Network_Traffic
+≠ 高质量符合 Network_Traffic
+≠ 满足某条 UEBA 检测要求
+</code></pre>
+<h2>13. 在哪里查看 Dataset</h2>
+<h3>13.1 Splunk Web</h3>
+<pre><code class="language-text">Settings
+→ Data Models
+→ 选择模型
+→ Edit Data Model
+</code></pre>
+<p>在 Enterprise Security 中也可以：</p>
+<pre><code class="language-text">Search
+→ Datasets
+→ Manage / Edit Data Model
+</code></pre>
+<p>Data Model Editor 能看到 Dataset 层级、Constraint、继承字段、计算字段和类型。需要相应读取或编辑权限。<a href="https://help.splunk.com/en/splunk-cloud-platform/common-information-model/6.2/data-models/how-to-use-the-cim-data-model-reference-tables">2</a></p>
+<h3>13.2 服务器 JSON</h3>
+<pre><code class="language-text">$SPLUNK_HOME/etc/apps/Splunk_SA_CIM/default/data/models/
+</code></pre>
+<p>关键属性：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>属性</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>objectName</code></td>
+<td>Dataset 内部名称</td>
+</tr>
+<tr>
+<td><code>displayName</code></td>
+<td>显示名称</td>
+</tr>
+<tr>
+<td><code>parentName</code></td>
+<td>父 Dataset</td>
+</tr>
+<tr>
+<td><code>constraints</code> / <code>baseSearch</code></td>
+<td>事件选择条件</td>
+</tr>
+<tr>
+<td><code>fields</code></td>
+<td>字段定义</td>
+</tr>
+<tr>
+<td><code>calculations</code></td>
+<td>计算字段</td>
+</tr>
+<tr>
+<td><code>children</code></td>
+<td>子 Dataset</td>
+</tr>
+</tbody></table></div>
+<h2>14. 怎样查询 Dataset</h2>
+<h3>14.1 展开为普通事件搜索</h3>
+<pre><code class="language-spl">| datamodel Network_Traffic All_Traffic search
+</code></pre>
+<pre><code class="language-spl">| datamodel Network_Traffic Allowed_Traffic search
+</code></pre>
+<pre><code class="language-spl">| datamodel Endpoint Filesystem search
+</code></pre>
+<p>这种方式适合首次验证 Constraint 和原始事件。</p>
+<h3>14.2 使用 <code>from datamodel</code></h3>
+<pre><code class="language-spl">| from datamodel:&quot;Authentication.Failed_Authentication&quot;
+| stats count BY user
+</code></pre>
+<h3>14.3 使用加速摘要和 <code>tstats</code></h3>
+<pre><code class="language-spl">| tstats
+    count
+    sum(All_Traffic.bytes_out) AS bytes_out
+  FROM datamodel=Network_Traffic.All_Traffic
+  BY All_Traffic.src All_Traffic.dest
+</code></pre>
+<p>只读取已完成摘要：</p>
+<pre><code class="language-spl">| tstats summariesonly=true count
+  FROM datamodel=Network_Traffic.All_Traffic
+  BY All_Traffic.sourcetype
+</code></pre>
+<p><code>summariesonly=true</code> 返回少量数据可能表示摘要滞后，而不是源事件少。首次验证应同时对比未加速 Data Model Search。</p>
+<h2>15. 怎样列出模型和 Dataset</h2>
+<p>列出当前 Search Head 可见模型：</p>
+<pre><code class="language-spl">| rest splunk_server=local count=0 /services/data/models
+| rename title AS model
+| table model eai:acl.app eai:acl.owner eai:acl.sharing
+| sort model
+</code></pre>
+<p>展开某模型的 Dataset：</p>
+<pre><code class="language-spl">| rest splunk_server=local count=0 /services/data/models
+| search title=&quot;Network_Traffic&quot;
+| spath input=eai:data output=datasets path=objects{}
+| mvexpand datasets
+| spath input=datasets output=dataset path=objectName
+| spath input=datasets output=display_name path=displayName
+| spath input=datasets output=parent path=parentName
+| spath input=datasets output=constraints path=constraints{}.search
+| table dataset display_name parent constraints
+</code></pre>
+<p>不同 Splunk/CIM 版本的 REST 返回结构可能变化，最终以 Data Model Editor 和模型 JSON 为准。</p>
+<h2>16. 怎样验证 Zeek 是否真正命中</h2>
+<h3>16.1 验证 Event Type 和 Tag</h3>
+<pre><code class="language-spl">index=&lt;目标索引&gt; sourcetype=zeek:conn
+| head 20
+| table _time sourcetype eventtype tag::eventtype
+</code></pre>
+<p>应看到 <code>zeek_network_traffic</code> 以及 <code>network</code>、<code>communicate</code>。</p>
+<h3>16.2 验证模型命中</h3>
+<pre><code class="language-spl">| datamodel Network_Traffic All_Traffic search
+| search sourcetype=zeek:conn
+| stats count
+</code></pre>
+<h3>16.3 验证字段语义</h3>
+<pre><code class="language-spl">index=&lt;目标索引&gt; sourcetype=zeek:conn
+| head 20
+| table
+    _time uid
+    id_orig_h src src_ip
+    id_resp_h dest dest_ip
+    id_orig_p src_port
+    id_resp_p dest_port
+    orig_ip_bytes bytes_out
+    resp_ip_bytes bytes_in
+    conn_state action direction transport
+</code></pre>
+<p>要对照原字段验证，不是只检查 CIM 字段非空。<code>ASNEW</code> 不会覆盖已经存在的目标字段，多个 Add-on 同时生效时可能出现 <code>src</code> 与 <code>id_orig_h</code> 不一致。</p>
+<h3>16.4 验证允许/阻断子 Dataset</h3>
+<pre><code class="language-spl">| datamodel Network_Traffic Allowed_Traffic search
+| search sourcetype=zeek:conn
+| stats count BY conn_state action
+</code></pre>
+<pre><code class="language-spl">| datamodel Network_Traffic Blocked_Traffic search
+| search sourcetype=zeek:conn
+| stats count BY conn_state action
+</code></pre>
+<h2>17. 常见失败原因</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>可能原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>有事件但模型无数据</td>
+<td>sourcetype 不匹配 eventtype；Tag 未生效；index 宏限制</td>
+</tr>
+<tr>
+<td>有 eventtype 但无模型数据</td>
+<td>tags.conf 未进入正确 App/权限作用域</td>
+</tr>
+<tr>
+<td>模型有数据但字段为空</td>
+<td>props/lookup 未部署到搜索执行层；字段名称或格式变化</td>
+</tr>
+<tr>
+<td>字段存在但值错误</td>
+<td>多 Add-on 冲突；<code>ASNEW</code> 保留了旧值；方向和字节口径错误</td>
+</tr>
+<tr>
+<td>普通 Data Model Search 有数据、<code>tstats</code> 少数据</td>
+<td>DMA 未开启、摘要范围不足或 Summarization Lag</td>
+</tr>
+<tr>
+<td>模型有数据但 UEBA 无结果</td>
+<td>检测必需字段缺失、窗口不满足、任务未运行或基线未成熟</td>
+</tr>
+</tbody></table></div>
+<h2>18. 实施建议</h2>
+<ol>
+<li>第一阶段优先验证 Authentication、Network Traffic、Endpoint、Change、Web 和 Email；</li>
+<li>为每种 sourcetype 保存 <code>eventtype → tag → Dataset → 必需字段</code> 映射表；</li>
+<li>把“模型命中率”和“关键字段完整率”分开监控；</li>
+<li>对多模型映射执行语义复核，尤其是 <code>zeek:files</code>；</li>
+<li>不修改 Add-on 的 <code>default</code> 文件，本地补充放在 <code>local</code> 并记录版本；</li>
+<li>升级 TA 或 CIM 后重新执行 Dataset、字段、DMA 和检测回归；</li>
+<li>最终异常必须能够回查 sourcetype、eventtype、tag、Dataset、字段版本和原始事件。</li>
+</ol>
+<h2>19. 主要官方资料</h2>
+<ul>
+<li>Splunk，<a href="https://help.splunk.com/en/data-management/common-information-model/8.5/introduction/overview-of-the-splunk-common-information-model">Overview of the Splunk Common Information Model</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/splunk-cloud-platform/common-information-model/6.2/data-models/how-to-use-the-cim-data-model-reference-tables">How to use the CIM data model reference tables</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/data-management/common-information-model/6.3/using-the-common-information-model/use-the-cim-to-normalize-data-at-search-time">Use the CIM to normalize data at search time</a>。</li>
+<li>Splunk，<a href="https://help.splunk.com/en/splunk-cloud-platform/common-information-model/6.0/data-models/cim-fields-per-associated-data-model">CIM fields per associated data model</a>。</li>
+<li>本地证据：<code>Splunk_TA_zeek/default/eventtypes.conf</code>、<code>tags.conf</code>、<code>props.conf</code>、<code>transforms.conf</code> 及 <code>Splunk_SA_CIM/default/data/models/*.json</code>。</li>
+</ul>
+</section><footer>本报告提供机制解释与证据边界，最终自研路线由决策者确定。来源详情见证据索引。</footer></main></body></html>
