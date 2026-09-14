@@ -1,0 +1,3 @@
+{"test_id":"WIN-4624-NEG-001","event":{"kind":"pipeline_error"},"ueba":{"quality":{"status":"invalid"}},"expected_error_contains":"missing TargetUserName"}
+{"test_id":"ZEEK-CONN-NEG-001","event":{"kind":"pipeline_error"},"ueba":{"quality":{"status":"invalid"}},"expected_error_contains":"missing Zeek endpoints"}
+{"test_id":"ZEEK-DNS-NEG-001","event":{"kind":"pipeline_error"},"ueba":{"quality":{"status":"invalid"}},"expected_error_contains":"missing DNS query"}

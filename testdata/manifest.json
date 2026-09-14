@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-09-14",
+  "classification": "synthetic",
+  "fixtures": [
+    {"id":"WIN-4624-001","raw":"raw/windows-security.jsonl","line":1,"expected":"expected/windows-security.jsonl","expected_line":1},
+    {"id":"WIN-4625-001","raw":"raw/windows-security.jsonl","line":2,"expected":"expected/windows-security.jsonl","expected_line":2},
+    {"id":"ZEEK-CONN-001","raw":"raw/zeek.jsonl","line":1,"expected":"expected/zeek.jsonl","expected_line":1},
+    {"id":"ZEEK-DNS-001","raw":"raw/zeek.jsonl","line":2,"expected":"expected/zeek.jsonl","expected_line":2},
+    {"id":"WIN-4624-NEG-001","raw":"raw/invalid.jsonl","line":1,"expected":"expected/errors.jsonl","expected_line":1},
+    {"id":"ZEEK-CONN-NEG-001","raw":"raw/invalid.jsonl","line":2,"expected":"expected/errors.jsonl","expected_line":2},
+    {"id":"ZEEK-DNS-NEG-001","raw":"raw/invalid.jsonl","line":3,"expected":"expected/errors.jsonl","expected_line":3}
+  ]
+}

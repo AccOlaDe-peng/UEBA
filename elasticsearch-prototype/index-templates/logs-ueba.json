@@ -1,0 +1,12 @@
+{
+  "index_patterns":["logs-ueba.*-*"],
+  "priority":500,
+  "composed_of":["ueba-base@1.0.0"],
+  "data_stream":{},
+  "template":{
+    "settings":{"index.lifecycle.name":"ueba-events-90d"},
+    "data_stream_options":{"failure_store":{"enabled":true}}
+  },
+  "version":10000,
+  "_meta":{"semantic_version":"1.0.0"}
+}

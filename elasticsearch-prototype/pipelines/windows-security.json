@@ -1,0 +1,24 @@
+{
+  "description":"Normalize parsed Windows Security 4624/4625 events to ECS + UEBA 1.0.0",
+  "version":10000,
+  "processors":[
+    {"set":{"field":"ecs.version","value":"9.5.0"}},
+    {"set":{"field":"event.kind","value":"event"}},
+    {"set":{"field":"event.dataset","value":"microsoft.windows.security"}},
+    {"set":{"field":"event.category","value":["authentication"]}},
+    {"set":{"field":"event.type","value":["start"]}},
+    {"set":{"field":"event.ingested","value":"{{{_ingest.timestamp}}}"}},
+    {"set":{"field":"ueba.schema.version","value":"1.0.0"}},
+    {"set":{"field":"ueba.source.type","value":"windows_security"}},
+    {"set":{"field":"ueba.event.type","value":"authentication.login"}},
+    {"set":{"field":"ueba.time.source","value":"system_time"}},
+    {"set":{"field":"ueba.time.quality","value":"exact"}},
+    {"script":{"lang":"painless","source":"def d=ctx.winlog?.event_data; if(d==null){throw new IllegalArgumentException('missing winlog.event_data');} def code=ctx.event?.code; if(code!='4624' && code!='4625'){throw new IllegalArgumentException('unsupported event code '+code);} ctx.event.action=code=='4624'?'logged-in':'logon-failed'; ctx.event.outcome=code=='4624'?'success':'failure'; ctx.user=new HashMap(); if(d.TargetUserSid!=null && d.TargetUserSid!='-')ctx.user.id=d.TargetUserSid; if(d.TargetUserName!=null && d.TargetUserName!='-')ctx.user.name=d.TargetUserName; if(d.TargetDomainName!=null && d.TargetDomainName!='-')ctx.user.domain=d.TargetDomainName; if(ctx.user.name==null)throw new IllegalArgumentException('missing TargetUserName'); ctx.source=new HashMap(); if(d.IpAddress!=null && d.IpAddress!='-' && d.IpAddress!='')ctx.source.ip=d.IpAddress; if(d.IpPort!=null && d.IpPort!='-' && d.IpPort!='')ctx.source.port=Integer.parseInt(d.IpPort); ctx.observer=['hostname':ctx.winlog.computer_name]; def tags=new ArrayList(); if(d.LogonType=='10')tags.add('remote_access'); else if(d.LogonType=='3')tags.add('network_logon'); else if(d.LogonType=='5')tags.add('service'); if(ctx.user.name.endsWith('$'))tags.add('machine_account'); ctx.ueba.event.semantic_tags=tags; ctx.ueba.source.native_event_id=ctx.winlog.record_id.toString(); ctx.ueba.source.namespace=ctx.tenant_id+'/'+ctx.winlog.computer_name+'/Security'; ctx.ueba.provenance=['raw_event_id':ctx.ueba.source.namespace+'/'+ctx.winlog.record_id,'parser_id':'windows_security_parsed','parser_version':'1.0.0','mapping_id':'windows_security_'+code,'mapping_version':'1.0.0']; ctx.event.id=ctx.ueba.provenance.raw_event_id; ctx.ueba.quality=['status':'qualified','score':1.0,'errors':new ArrayList(),'warnings':new ArrayList()];"}}
+  ],
+  "on_failure":[
+    {"set":{"field":"event.kind","value":"pipeline_error"}},
+    {"set":{"field":"ueba.quality.status","value":"invalid"}},
+    {"set":{"field":"error.message","value":"{{{_ingest.on_failure_message}}}"}},
+    {"set":{"field":"error.type","value":"{{{_ingest.on_failure_processor_type}}}"}}
+  ]
+}

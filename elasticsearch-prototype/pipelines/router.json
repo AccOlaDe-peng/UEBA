@@ -1,0 +1,13 @@
+{
+  "description":"Route parsed source events to versioned normalization pipelines",
+  "version":10000,
+  "processors":[
+    {"pipeline":{"if":"ctx.winlog != null && ctx.event?.code != null","name":"ueba-windows-security-1.0.0"}},
+    {"pipeline":{"if":"ctx._path == 'conn' || ctx._path == 'dns'","name":"ueba-zeek-1.0.0"}}
+  ],
+  "on_failure":[
+    {"set":{"field":"event.kind","value":"pipeline_error"}},
+    {"set":{"field":"ueba.quality.status","value":"invalid"}},
+    {"set":{"field":"error.message","value":"{{{_ingest.on_failure_message}}}"}}
+  ]
+}

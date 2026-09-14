@@ -1,0 +1,164 @@
+{
+  "template": {
+    "settings": {
+      "index.mapping.total_fields.limit": 2000,
+      "index.default_pipeline": "ueba-router-1.0.0"
+    },
+    "mappings": {
+      "dynamic": true,
+      "dynamic_templates": [
+        {
+          "strings_as_keyword": {
+            "match_mapping_type": "string",
+            "mapping": { "type": "keyword", "ignore_above": 1024 }
+          }
+        }
+      ],
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "ecs": { "properties": { "version": { "type": "keyword" } } },
+        "event": {
+          "properties": {
+            "id": { "type": "keyword" },
+            "kind": { "type": "keyword" },
+            "category": { "type": "keyword" },
+            "type": { "type": "keyword" },
+            "action": { "type": "keyword" },
+            "outcome": { "type": "keyword" },
+            "code": { "type": "keyword" },
+            "dataset": { "type": "keyword" },
+            "reason": { "type": "keyword", "ignore_above": 2048 },
+            "created": { "type": "date" },
+            "ingested": { "type": "date" },
+            "duration": { "type": "long" }
+          }
+        },
+        "source": {
+          "properties": {
+            "ip": { "type": "ip" },
+            "port": { "type": "long" },
+            "bytes": { "type": "long" },
+            "packets": { "type": "long" },
+            "mac": { "type": "keyword" }
+          }
+        },
+        "destination": {
+          "properties": {
+            "ip": { "type": "ip" },
+            "port": { "type": "long" },
+            "bytes": { "type": "long" },
+            "packets": { "type": "long" },
+            "mac": { "type": "keyword" }
+          }
+        },
+        "network": {
+          "properties": {
+            "transport": { "type": "keyword" },
+            "protocol": { "type": "keyword" },
+            "direction": { "type": "keyword" },
+            "bytes": { "type": "long" },
+            "packets": { "type": "long" }
+          }
+        },
+        "user": {
+          "properties": {
+            "id": { "type": "keyword" },
+            "name": { "type": "keyword" },
+            "domain": { "type": "keyword" },
+            "type": { "type": "keyword" }
+          }
+        },
+        "host": {
+          "properties": {
+            "id": { "type": "keyword" },
+            "hostname": { "type": "keyword" },
+            "domain": { "type": "keyword" },
+            "ip": { "type": "ip" }
+          }
+        },
+        "observer": {
+          "properties": {
+            "id": { "type": "keyword" },
+            "name": { "type": "keyword" },
+            "hostname": { "type": "keyword" },
+            "vendor": { "type": "keyword" },
+            "product": { "type": "keyword" },
+            "type": { "type": "keyword" }
+          }
+        },
+        "dns": {
+          "properties": {
+            "id": { "type": "keyword" },
+            "response_code": { "type": "keyword" },
+            "question": {
+              "properties": {
+                "name": { "type": "keyword" },
+                "type": { "type": "keyword" }
+              }
+            },
+            "answers": {
+              "type": "nested",
+              "properties": {
+                "data": { "type": "keyword" },
+                "ttl": { "type": "long" }
+              }
+            }
+          }
+        },
+        "vendor": { "type": "object", "enabled": false },
+        "ueba": {
+          "properties": {
+            "schema": { "properties": { "version": { "type": "keyword" } } },
+            "source": {
+              "properties": {
+                "type": { "type": "keyword" },
+                "namespace": { "type": "keyword" },
+                "native_event_id": { "type": "keyword" },
+                "collected_at": { "type": "date" },
+                "received_at": { "type": "date" }
+              }
+            },
+            "event": {
+              "properties": {
+                "type": { "type": "keyword" },
+                "semantic_tags": { "type": "keyword" }
+              }
+            },
+            "session": {
+              "properties": {
+                "id": { "type": "keyword" },
+                "type": { "type": "keyword" },
+                "assigned_ip": { "type": "ip" }
+              }
+            },
+            "time": {
+              "properties": {
+                "source": { "type": "keyword" },
+                "quality": { "type": "keyword" }
+              }
+            },
+            "provenance": {
+              "properties": {
+                "raw_event_id": { "type": "keyword" },
+                "parser_id": { "type": "keyword" },
+                "parser_version": { "type": "keyword" },
+                "mapping_id": { "type": "keyword" },
+                "mapping_version": { "type": "keyword" }
+              }
+            },
+            "quality": {
+              "properties": {
+                "status": { "type": "keyword" },
+                "score": { "type": "scaled_float", "scaling_factor": 1000 },
+                "errors": { "type": "keyword" },
+                "warnings": { "type": "keyword" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10000,
+  "_meta": { "artifact": "ueba-base", "semantic_version": "1.0.0" }
+}
