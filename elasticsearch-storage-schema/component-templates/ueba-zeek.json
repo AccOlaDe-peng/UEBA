@@ -1,0 +1,20 @@
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "zeek": {
+          "dynamic": "strict",
+          "properties": {
+            "session_id": {"type": "keyword"},
+            "conn": {"dynamic": "strict", "properties": {"state": {"type": "keyword"}, "history": {"type": "keyword"}, "local_orig": {"type": "boolean"}, "local_resp": {"type": "boolean"}, "missed_bytes": {"type": "long"}, "orig_ip_bytes": {"type": "long"}, "resp_ip_bytes": {"type": "long"}}},
+            "dns": {"type": "flattened"}, "http": {"type": "flattened"}, "ssl": {"type": "flattened"},
+            "ssh": {"type": "flattened"}, "dhcp": {"type": "flattened"}, "file": {"type": "flattened"},
+            "notice": {"type": "flattened"}, "telemetry": {"type": "flattened"}, "raw": {"type": "flattened"}
+          }
+        }
+      }
+    }
+  },
+  "version": 10000,
+  "_meta": {"artifact": "ueba-zeek", "semantic_version": "1.0.0"}
+}

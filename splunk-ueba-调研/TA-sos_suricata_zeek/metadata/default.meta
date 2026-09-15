@@ -1,0 +1,8 @@
+[default]
+access = read : [ * ], write : [ admin, sc_admin ]
+
+[props]
+access = read : [ * ], write : [ admin, sc_admin ]
+
+[transforms]
+access = read : [ * ], write : [ admin, sc_admin ]

@@ -1,0 +1,72 @@
+<form version="1.1">
+  <label>Network Security Dashboard</label>
+  <fieldset submitButton="false">
+    <input type="time" token="time">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Zeek Network Traffic (Conn, SIP, HTTP, DNS)</title>
+      <table>
+        <search>
+          <query>sourcetype=zeek:json eventtype=zeek_conn OR eventtype=zeek_sip OR eventtype=zeek_http OR eventtype=zeek_dns | stats count by src, dest, src_port, dest_port, service_name, http_method, url, dns_query</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Zeek Authentication Events (Kerberos, NTLM)</title>
+      <table>
+        <search>
+          <query>sourcetype=zeek:json eventtype=zeek_kerberos OR eventtype=zeek_ntlm | stats count by src, dest, user, service, action, success</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Zeek Intrusion Notices</title>
+      <table>
+        <search>
+          <query>sourcetype=zeek:json eventtype=zeek_notice | stats count by src, dest, signature</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Suricata Alerts</title>
+      <table>
+        <search>
+          <query>sourcetype=suricata:json eventtype=suricata_alert | stats count by src, dest, signature, category, severity, action</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>
