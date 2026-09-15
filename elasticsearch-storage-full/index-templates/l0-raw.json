@@ -1,0 +1,15 @@
+{
+  "index_patterns": ["logs-ueba.raw-*"],
+  "priority": 700,
+  "composed_of": ["ueba-l0-raw@1.0.0"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "ueba-l0-raw-30d",
+      "index.default_pipeline": "ueba-l0-raw-envelope-1.0.0"
+    },
+    "data_stream_options": { "failure_store": { "enabled": true } }
+  },
+  "version": 10000,
+  "_meta": { "artifact": "ueba-l0-raw", "semantic_version": "1.0.0" }
+}

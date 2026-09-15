@@ -1,0 +1,36 @@
+{
+  "description": "Validate normalized L1 minimum contract and route by event semantics",
+  "version": 10000,
+  "processors": [
+    {
+      "set": { "field": "event.ingested", "value": "{{{_ingest.timestamp}}}" }
+    },
+    { "set": { "field": "ecs.version", "value": "9.5.0", "override": false } },
+    {
+      "set": {
+        "field": "ueba.schema.version",
+        "value": "1.0.0",
+        "override": false
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "def errors=new ArrayList();if(ctx['@timestamp']==null)errors.add('missing_@timestamp');if(ctx.organization==null||ctx.organization.id==null)errors.add('missing_organization.id');if(ctx.event==null){errors.add('missing_event');}else{if(ctx.event.module==null)errors.add('missing_event.module');if(ctx.event.dataset==null)errors.add('missing_event.dataset');if(ctx.event.kind==null)errors.add('missing_event.kind');}if(ctx.ueba==null)ctx.ueba=new HashMap();if(ctx.ueba.quality==null)ctx.ueba.quality=new HashMap();if(errors.isEmpty()){if(ctx.ueba.quality.status==null)ctx.ueba.quality.status='qualified';if(ctx.ueba.quality.score==null)ctx.ueba.quality.score=1.0;if(ctx.ueba.quality.errors==null)ctx.ueba.quality.errors=new ArrayList();if(ctx.ueba.quality.warnings==null)ctx.ueba.quality.warnings=new ArrayList();}else{ctx.ueba.quality.status='invalid';ctx.ueba.quality.score=0.0;ctx.ueba.quality.errors=errors;if(ctx.ueba.quality.warnings==null)ctx.ueba.quality.warnings=new ArrayList();ctx.event=ctx.event==null?new HashMap():ctx.event;ctx.event.kind='pipeline_error';}"
+      }
+    },
+    { "pipeline": { "name": "ueba-l1-domain-router-1.0.0" } }
+  ],
+  "on_failure": [
+    { "set": { "field": "event.kind", "value": "pipeline_error" } },
+    { "set": { "field": "ueba.quality.status", "value": "invalid" } },
+    { "set": { "field": "ueba.quality.score", "value": 0.0 } },
+    {
+      "set": {
+        "field": "error.message",
+        "value": "{{{_ingest.on_failure_message}}}"
+      }
+    },
+    { "pipeline": { "name": "ueba-l1-domain-router-1.0.0" } }
+  ]
+}

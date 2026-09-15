@@ -1,0 +1,46 @@
+{
+  "template": {
+    "settings": { "index.mapping.total_fields.limit": 500 },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "organization": { "properties": { "id": { "type": "keyword" } } },
+        "relation": {
+          "properties": {
+            "id": { "type": "keyword" },
+            "type": { "type": "keyword" },
+            "status": { "type": "keyword" },
+            "source": {
+              "properties": {
+                "entity_id": { "type": "keyword" },
+                "entity_type": { "type": "keyword" }
+              }
+            },
+            "target": {
+              "properties": {
+                "entity_id": { "type": "keyword" },
+                "entity_type": { "type": "keyword" }
+              }
+            },
+            "valid_from": { "type": "date" },
+            "valid_to": { "type": "date" },
+            "confidence": { "type": "scaled_float", "scaling_factor": 1000 },
+            "evidence_event_ids": { "type": "keyword" },
+            "evidence_count": { "type": "long" },
+            "resolution_version": { "type": "keyword" },
+            "attributes": { "type": "flattened" }
+          }
+        },
+        "quality": {
+          "properties": {
+            "status": { "type": "keyword" },
+            "warnings": { "type": "keyword" }
+          }
+        }
+      }
+    }
+  },
+  "version": 10000,
+  "_meta": { "artifact": "ueba-l2-relations", "semantic_version": "1.0.0" }
+}

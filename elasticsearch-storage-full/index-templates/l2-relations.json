@@ -1,0 +1,11 @@
+{
+  "index_patterns": ["ueba-entity-relations-*"],
+  "priority": 500,
+  "composed_of": ["ueba-l2-relations@1.0.0"],
+  "data_stream": {},
+  "template": {
+    "settings": { "index.lifecycle.name": "ueba-l2-relations-365d" }
+  },
+  "version": 10000,
+  "_meta": { "artifact": "ueba-l2-relations", "semantic_version": "1.0.0" }
+}

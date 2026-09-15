@@ -1,0 +1,45 @@
+{
+  "template": {
+    "settings": { "index.mapping.total_fields.limit": 400 },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "organization": { "properties": { "id": { "type": "keyword" } } },
+        "entity": {
+          "properties": {
+            "id": { "type": "keyword" },
+            "type": { "type": "keyword" },
+            "name": { "type": "keyword" }
+          }
+        },
+        "risk": {
+          "properties": {
+            "score": { "type": "double" },
+            "level": { "type": "keyword" },
+            "status": { "type": "keyword" },
+            "first_seen": { "type": "date" },
+            "last_updated": { "type": "date" },
+            "open_anomaly_count": { "type": "long" },
+            "top_reason_codes": { "type": "keyword" }
+          }
+        },
+        "latest": {
+          "properties": {
+            "risk_event_id": { "type": "keyword" },
+            "anomaly_ids": { "type": "keyword" }
+          }
+        },
+        "calculation": {
+          "properties": {
+            "policy_id": { "type": "keyword" },
+            "policy_version": { "type": "keyword" },
+            "version": { "type": "long" }
+          }
+        }
+      }
+    }
+  },
+  "version": 10000,
+  "_meta": { "artifact": "ueba-l4-risk-current", "semantic_version": "1.0.0" }
+}

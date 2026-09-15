@@ -1,0 +1,14 @@
+{
+  "index_patterns": ["ueba-entities-v*-*"],
+  "priority": 500,
+  "composed_of": ["ueba-l2-entities@1.0.0"],
+  "template": {
+    "settings": { "index.number_of_shards": 1, "index.number_of_replicas": 1 }
+  },
+  "version": 10000,
+  "_meta": {
+    "artifact": "ueba-l2-entities",
+    "semantic_version": "1.0.0",
+    "alias_pattern": "ueba-entities-<namespace>"
+  }
+}

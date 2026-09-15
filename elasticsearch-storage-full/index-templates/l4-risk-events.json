@@ -1,0 +1,11 @@
+{
+  "index_patterns": ["ueba-risk-events-*"],
+  "priority": 500,
+  "composed_of": ["ueba-l4-risk-events@1.0.0"],
+  "data_stream": {},
+  "template": {
+    "settings": { "index.lifecycle.name": "ueba-l4-analysis-365d" }
+  },
+  "version": 10000,
+  "_meta": { "artifact": "ueba-l4-risk-events", "semantic_version": "1.0.0" }
+}

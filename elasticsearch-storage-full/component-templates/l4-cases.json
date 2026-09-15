@@ -1,0 +1,55 @@
+{
+  "template": {
+    "settings": { "index.mapping.total_fields.limit": 600 },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "organization": { "properties": { "id": { "type": "keyword" } } },
+        "case": {
+          "properties": {
+            "id": { "type": "keyword" },
+            "title": {
+              "type": "text",
+              "fields": {
+                "keyword": { "type": "keyword", "ignore_above": 512 }
+              }
+            },
+            "description": { "type": "match_only_text" },
+            "status": { "type": "keyword" },
+            "severity": { "type": "keyword" },
+            "created_at": { "type": "date" },
+            "updated_at": { "type": "date" },
+            "closed_at": { "type": "date" },
+            "assignee": { "type": "keyword" },
+            "tags": { "type": "keyword" },
+            "resolution": { "type": "keyword" },
+            "feedback": {
+              "properties": {
+                "verdict": { "type": "keyword" },
+                "reason": { "type": "match_only_text" },
+                "labels": { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "entities": {
+          "properties": {
+            "ids": { "type": "keyword" },
+            "types": { "type": "keyword" }
+          }
+        },
+        "evidence": {
+          "properties": {
+            "anomaly_ids": { "type": "keyword" },
+            "risk_event_ids": { "type": "keyword" },
+            "event_ids": { "type": "keyword" }
+          }
+        },
+        "version": { "type": "long" }
+      }
+    }
+  },
+  "version": 10000,
+  "_meta": { "artifact": "ueba-l4-cases", "semantic_version": "1.0.0" }
+}

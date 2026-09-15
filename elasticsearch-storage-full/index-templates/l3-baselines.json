@@ -1,0 +1,14 @@
+{
+  "index_patterns": ["ueba-baselines-v*-*"],
+  "priority": 500,
+  "composed_of": ["ueba-l3-baselines@1.0.0"],
+  "template": {
+    "settings": { "index.number_of_shards": 1, "index.number_of_replicas": 1 }
+  },
+  "version": 10000,
+  "_meta": {
+    "artifact": "ueba-l3-baselines",
+    "semantic_version": "1.0.0",
+    "alias_pattern": "ueba-baselines-current-<namespace>"
+  }
+}

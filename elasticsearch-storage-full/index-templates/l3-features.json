@@ -1,0 +1,11 @@
+{
+  "index_patterns": ["ueba-features-*"],
+  "priority": 500,
+  "composed_of": ["ueba-l3-features@1.0.0"],
+  "data_stream": {},
+  "template": {
+    "settings": { "index.lifecycle.name": "ueba-l3-features-180d" }
+  },
+  "version": 10000,
+  "_meta": { "artifact": "ueba-l3-features", "semantic_version": "1.0.0" }
+}
