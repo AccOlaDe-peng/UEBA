@@ -1,0 +1,151 @@
+{
+  "template": {
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "host": {
+          "dynamic": false,
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "hostname": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "ip": {
+              "type": "ip"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "architecture": {
+              "type": "keyword"
+            }
+          }
+        },
+        "user": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "full_name": {
+              "type": "keyword"
+            },
+            "email": {
+              "type": "keyword"
+            },
+            "roles": {
+              "type": "keyword"
+            },
+            "target": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "domain": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "effective": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "domain": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "source": {
+          "dynamic": false,
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "long"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "address": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "destination": {
+          "dynamic": false,
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "long"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "address": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "rule": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-normalized-event-alert",
+    "semantic_version": "1.1.0",
+    "role": "alert domain extension"
+  }
+}

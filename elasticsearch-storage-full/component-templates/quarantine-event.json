@@ -1,0 +1,346 @@
+{
+  "template": {
+    "mappings": {
+      "dynamic": false,
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "ecs": {
+          "properties": {
+            "version": {
+              "type": "keyword"
+            }
+          }
+        },
+        "data_stream": {
+          "properties": {
+            "type": {
+              "type": "constant_keyword",
+              "value": "logs"
+            },
+            "dataset": {
+              "type": "constant_keyword"
+            },
+            "namespace": {
+              "type": "constant_keyword"
+            }
+          }
+        },
+        "organization": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            }
+          }
+        },
+        "agent": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "version": {
+              "type": "keyword"
+            }
+          }
+        },
+        "event": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "kind": {
+              "type": "keyword"
+            },
+            "category": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "action": {
+              "type": "keyword"
+            },
+            "outcome": {
+              "type": "keyword"
+            },
+            "code": {
+              "type": "keyword"
+            },
+            "module": {
+              "type": "keyword"
+            },
+            "dataset": {
+              "type": "keyword"
+            },
+            "provider": {
+              "type": "keyword"
+            },
+            "reason": {
+              "type": "keyword",
+              "ignore_above": 2048
+            },
+            "created": {
+              "type": "date"
+            },
+            "ingested": {
+              "type": "date"
+            },
+            "start": {
+              "type": "date"
+            },
+            "end": {
+              "type": "date"
+            },
+            "duration": {
+              "type": "long"
+            },
+            "original": {
+              "type": "keyword",
+              "index": false,
+              "doc_values": false
+            }
+          }
+        },
+        "error": {
+          "properties": {
+            "message": {
+              "type": "match_only_text"
+            },
+            "type": {
+              "type": "keyword"
+            }
+          }
+        },
+        "message": {
+          "type": "match_only_text"
+        },
+        "tags": {
+          "type": "keyword"
+        },
+        "labels": {
+          "type": "flattened"
+        },
+        "log": {
+          "properties": {
+            "level": {
+              "type": "keyword"
+            },
+            "file": {
+              "properties": {
+                "path": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "offset": {
+              "type": "long"
+            }
+          }
+        },
+        "service": {
+          "dynamic": false,
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            }
+          }
+        },
+        "rule": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            }
+          }
+        },
+        "related": {
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "user": {
+              "type": "keyword"
+            },
+            "hosts": {
+              "type": "keyword"
+            },
+            "hash": {
+              "type": "keyword"
+            }
+          }
+        },
+        "ueba": {
+          "properties": {
+            "schema": {
+              "properties": {
+                "version": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "source": {
+              "properties": {
+                "type": {
+                  "type": "keyword"
+                },
+                "namespace": {
+                  "type": "keyword"
+                },
+                "native_event_id": {
+                  "type": "keyword"
+                },
+                "collected_at": {
+                  "type": "date"
+                },
+                "received_at": {
+                  "type": "date"
+                }
+              }
+            },
+            "event": {
+              "properties": {
+                "type": {
+                  "type": "keyword"
+                },
+                "semantic_tags": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "domain": {
+                  "type": "keyword"
+                },
+                "dataset": {
+                  "type": "keyword"
+                },
+                "rule_id": {
+                  "type": "keyword"
+                },
+                "version": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "session": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "type": {
+                  "type": "keyword"
+                },
+                "assigned_ip": {
+                  "type": "ip"
+                }
+              }
+            },
+            "time": {
+              "properties": {
+                "source": {
+                  "type": "keyword"
+                },
+                "quality": {
+                  "type": "keyword"
+                },
+                "original": {
+                  "type": "keyword"
+                },
+                "original_timezone": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "provenance": {
+              "properties": {
+                "raw_event_id": {
+                  "type": "keyword"
+                },
+                "raw_uri": {
+                  "type": "keyword",
+                  "index": false
+                },
+                "raw_sha256": {
+                  "type": "keyword"
+                },
+                "parser_id": {
+                  "type": "keyword"
+                },
+                "parser_version": {
+                  "type": "keyword"
+                },
+                "mapping_id": {
+                  "type": "keyword"
+                },
+                "mapping_version": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "quality": {
+              "properties": {
+                "status": {
+                  "type": "keyword"
+                },
+                "score": {
+                  "type": "scaled_float",
+                  "scaling_factor": 1000
+                },
+                "errors": {
+                  "type": "keyword"
+                },
+                "warnings": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "vendor": {
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "product": {
+              "type": "keyword"
+            },
+            "dataset": {
+              "type": "keyword"
+            },
+            "schema_version": {
+              "type": "keyword"
+            },
+            "payload": {
+              "type": "flattened"
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-quarantine-event",
+    "semantic_version": "1.1.0",
+    "role": "failed or unsupported normalized input"
+  }
+}

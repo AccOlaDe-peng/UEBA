@@ -1,0 +1,171 @@
+{
+  "template": {
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "host": {
+          "dynamic": false,
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "hostname": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "ip": {
+              "type": "ip"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "architecture": {
+              "type": "keyword"
+            }
+          }
+        },
+        "user": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "full_name": {
+              "type": "keyword"
+            },
+            "email": {
+              "type": "keyword"
+            },
+            "roles": {
+              "type": "keyword"
+            },
+            "target": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "domain": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "effective": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "domain": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "process": {
+          "dynamic": false,
+          "properties": {
+            "pid": {
+              "type": "long"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "executable": {
+              "type": "keyword"
+            },
+            "command_line": {
+              "type": "wildcard"
+            },
+            "args": {
+              "type": "keyword"
+            },
+            "args_count": {
+              "type": "long"
+            },
+            "working_directory": {
+              "type": "keyword"
+            },
+            "exit_code": {
+              "type": "long"
+            },
+            "parent": {
+              "properties": {
+                "pid": {
+                  "type": "long"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "executable": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "file": {
+          "dynamic": false,
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "path": {
+              "type": "keyword"
+            },
+            "size": {
+              "type": "long"
+            },
+            "mime_type": {
+              "type": "keyword"
+            },
+            "hash": {
+              "properties": {
+                "md5": {
+                  "type": "keyword"
+                },
+                "sha1": {
+                  "type": "keyword"
+                },
+                "sha256": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "package": {
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "version": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-normalized-event-endpoint",
+    "semantic_version": "1.1.0",
+    "role": "endpoint domain extension"
+  }
+}

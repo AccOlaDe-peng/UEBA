@@ -12,6 +12,7 @@ put_json() {
   echo "installed ${path}"
 }
 
+python3 "${root_dir}/scripts/compile-route-pipeline.py"
 "${root_dir}/scripts/validate.sh"
 
 for file in "${root_dir}"/ilm/*.json; do
@@ -25,9 +26,11 @@ for file in "${root_dir}"/component-templates/*.json; do
   put_json "/_component_template/${artifact}@${version}" "${file}"
 done
 
-put_json '/_ingest/pipeline/ueba-l1-domain-router-1.0.0' "${root_dir}/pipelines/l1-domain-router.json"
-put_json '/_ingest/pipeline/ueba-l1-common-validate-1.0.0' "${root_dir}/pipelines/l1-common-validate.json"
-put_json '/_ingest/pipeline/ueba-l0-raw-envelope-1.0.0' "${root_dir}/pipelines/l0-raw-envelope.json"
+put_json '/_ingest/pipeline/ueba-normalized-event-classifier-1.1.0' "${root_dir}/pipelines/normalized-event-classifier.json"
+put_json '/_ingest/pipeline/ueba-normalized-event-router-1.1.0' "${root_dir}/pipelines/normalized-event-router.json"
+put_json '/_ingest/pipeline/ueba-normalized-event-validate-1.1.0' "${root_dir}/pipelines/normalized-event-validate.json"
+put_json '/_ingest/pipeline/ueba-normalized-event-ingress-1.1.0' "${root_dir}/pipelines/normalized-event-ingress.json"
+put_json '/_ingest/pipeline/ueba-raw-evidence-envelope-1.0.0' "${root_dir}/pipelines/raw-evidence-envelope.json"
 
 for file in "${root_dir}"/index-templates/*.json; do
   artifact="$(jq -r '._meta.artifact' "${file}")"
@@ -49,4 +52,4 @@ create_versioned_index "ueba-baselines-v1-${namespace}" "ueba-baselines-current-
 create_versioned_index "ueba-entity-risk-current-v1-${namespace}" "ueba-entity-risk-current-${namespace}"
 create_versioned_index "ueba-cases-v1-${namespace}" "ueba-cases-${namespace}"
 
-echo 'UEBA L0-L4 storage artifacts installed'
+echo 'UEBA data-object storage artifacts installed'

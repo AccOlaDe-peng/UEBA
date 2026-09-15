@@ -1,0 +1,68 @@
+{
+  "description": "Validate the route contract and reroute once to the selected semantic event data stream",
+  "version": 10100,
+  "processors": [
+    {
+      "script": {
+        "lang": "painless",
+        "source": "def allowed=['authentication','iam','directory','endpoint','network','dns','web','tls','file','session','email','alert','state','metric'];if(ctx.ueba==null)ctx.ueba=new HashMap();if(ctx.ueba.route==null)ctx.ueba.route=new HashMap();def domain=ctx.ueba.route.domain;def invalid=ctx.ueba?.quality?.status=='invalid'||ctx.ueba?.quality?.status=='unsupported'||ctx.event?.kind=='pipeline_error';if(invalid||domain==null||!allowed.contains(domain)){domain='quarantine';if(ctx.ueba.quality==null)ctx.ueba.quality=new HashMap();if(ctx.ueba.quality.status==null||ctx.ueba.quality.status=='qualified')ctx.ueba.quality.status='unsupported';if(ctx.ueba.quality.errors==null)ctx.ueba.quality.errors=new ArrayList();if(!ctx.ueba.quality.errors.contains('invalid_or_missing_route_domain'))ctx.ueba.quality.errors.add('invalid_or_missing_route_domain');}ctx.ueba.route.domain=domain;ctx.ueba.route.dataset='ueba.'+domain;if(ctx.ueba.route.version==null)ctx.ueba.route.version='1.0.0';"
+      }
+    },
+    {
+      "reroute": {
+        "destination": {
+          "type": "logs",
+          "dataset": "{{{ueba.route.dataset}}}",
+          "namespace": "{{{data_stream.namespace}}}"
+        }
+      }
+    }
+  ],
+  "on_failure": [
+    {
+      "set": {
+        "field": "event.kind",
+        "value": "pipeline_error"
+      }
+    },
+    {
+      "set": {
+        "field": "ueba.quality.status",
+        "value": "invalid"
+      }
+    },
+    {
+      "set": {
+        "field": "ueba.quality.score",
+        "value": 0.0
+      }
+    },
+    {
+      "set": {
+        "field": "ueba.route.domain",
+        "value": "quarantine"
+      }
+    },
+    {
+      "set": {
+        "field": "ueba.route.dataset",
+        "value": "ueba.quarantine"
+      }
+    },
+    {
+      "set": {
+        "field": "error.message",
+        "value": "{{{_ingest.on_failure_message}}}"
+      }
+    },
+    {
+      "reroute": {
+        "destination": {
+          "type": "logs",
+          "dataset": "ueba.quarantine",
+          "namespace": "{{{data_stream.namespace}}}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "description": "Derive the trusted route contract from the controlled source mapping registry",
+  "version": 10100,
+  "processors": [
+    {
+      "script": {
+        "lang": "painless",
+        "params": {
+          "windows_event_code": {
+            "4624": "authentication",
+            "4625": "authentication",
+            "4634": "session",
+            "4647": "session",
+            "4648": "authentication",
+            "4661": "directory",
+            "4662": "directory",
+            "4670": "directory",
+            "4673": "directory",
+            "4688": "endpoint",
+            "4689": "endpoint",
+            "4720": "iam",
+            "4722": "iam",
+            "4723": "iam",
+            "4724": "iam",
+            "4725": "iam",
+            "4726": "iam",
+            "4728": "iam",
+            "4729": "iam",
+            "4732": "iam",
+            "4733": "iam",
+            "4738": "iam",
+            "4740": "iam",
+            "4741": "iam",
+            "4742": "iam",
+            "4743": "iam",
+            "4756": "iam",
+            "4757": "iam",
+            "4768": "authentication",
+            "4769": "authentication",
+            "4771": "authentication",
+            "4776": "authentication"
+          },
+          "fixed_vendor_dataset": {
+            "zeek.conn": "network",
+            "zeek.dns": "dns",
+            "zeek.http": "web",
+            "zeek.ssl": "tls",
+            "zeek.x509": "tls",
+            "zeek.ocsp": "tls",
+            "zeek.rdp": "network",
+            "zeek.kerberos": "authentication",
+            "zeek.ntlm": "authentication",
+            "zeek.radius": "authentication",
+            "zeek.files": "file",
+            "zeek.smb_files": "file",
+            "zeek.smtp": "email",
+            "zeek.dhcp": "session",
+            "zeek.notice": "alert",
+            "zeek.intel": "alert",
+            "zeek.signatures": "alert",
+            "zeek.software": "state",
+            "zeek.known_hosts": "state",
+            "zeek.known_services": "state",
+            "zeek.sensor": "metric",
+            "linux.web_access": "web",
+            "linux.package": "endpoint"
+          },
+          "native_type_routes": {
+            "linux.audit": {
+              "EXECVE": "endpoint",
+              "SYSCALL": "endpoint",
+              "USER_LOGIN": "authentication",
+              "USER_AUTH": "authentication",
+              "USER_LOGOUT": "session",
+              "ADD_USER": "iam",
+              "DEL_USER": "iam",
+              "PATH": "file"
+            },
+            "linux.auth": {
+              "LOGIN_SUCCESS": "authentication",
+              "LOGIN_FAILURE": "authentication",
+              "LOGOUT": "session",
+              "USER_ADD": "iam",
+              "USER_DELETE": "iam",
+              "SUDO": "endpoint"
+            },
+            "zeek.ssh": {
+              "AUTH_SUCCESS": "authentication",
+              "AUTH_FAILURE": "authentication",
+              "CONNECTION": "network"
+            }
+          },
+          "route_version": "1.0.0"
+        },
+        "source": "if(ctx.ueba==null)ctx.ueba=new HashMap();ctx.ueba.remove('route');ctx.ueba.route=new HashMap();def dataset=ctx.vendor?.dataset;def domain=null;def rule=null;if(dataset=='windows.security'&&ctx.event?.code!=null){def code=ctx.event.code.toString();domain=params.windows_event_code[code];if(domain!=null)rule=dataset+'/'+code;}if(domain==null&&dataset!=null){domain=params.fixed_vendor_dataset[dataset];if(domain!=null)rule=dataset;}if(domain==null&&dataset!=null&&params.native_type_routes.containsKey(dataset)){def nativeType=ctx.vendor?.payload?.record_type;if(nativeType==null)nativeType=ctx.vendor?.payload?.event_type;if(nativeType!=null){domain=params.native_type_routes[dataset][nativeType.toString()];if(domain!=null)rule=dataset+'/'+nativeType.toString();}}if(domain!=null){ctx.ueba.route.domain=domain;ctx.ueba.route.rule_id=rule;ctx.ueba.route.version=params.route_version;}"
+      }
+    }
+  ]
+}

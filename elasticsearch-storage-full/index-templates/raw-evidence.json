@@ -1,0 +1,26 @@
+{
+  "index_patterns": [
+    "logs-ueba.raw-*"
+  ],
+  "priority": 700,
+  "composed_of": [
+    "ueba-raw-evidence@1.0.0"
+  ],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "ueba-raw-evidence-30d",
+      "index.default_pipeline": "ueba-raw-evidence-envelope-1.0.0"
+    },
+    "data_stream_options": {
+      "failure_store": {
+        "enabled": true
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-raw-evidence",
+    "semantic_version": "1.1.0"
+  }
+}

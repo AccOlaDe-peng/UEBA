@@ -1,0 +1,25 @@
+{
+  "index_patterns": [
+    "logs-ueba.quarantine-*"
+  ],
+  "priority": 850,
+  "composed_of": [
+    "ueba-quarantine-event@1.1.0"
+  ],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "ueba-normalized-events-90d"
+    },
+    "data_stream_options": {
+      "failure_store": {
+        "enabled": true
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-quarantine-event",
+    "semantic_version": "1.1.0"
+  }
+}

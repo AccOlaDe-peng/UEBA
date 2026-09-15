@@ -1,0 +1,20 @@
+{
+  "index_patterns": [
+    "ueba-features-*"
+  ],
+  "priority": 500,
+  "composed_of": [
+    "ueba-behavior-features@1.0.0"
+  ],
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "ueba-behavior-features-180d"
+    }
+  },
+  "version": 10000,
+  "_meta": {
+    "artifact": "ueba-behavior-features",
+    "semantic_version": "1.0.0"
+  },
+  "data_stream": {}
+}

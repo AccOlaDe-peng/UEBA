@@ -1,0 +1,22 @@
+{
+  "index_patterns": [
+    "logs-ueba.ingress-*"
+  ],
+  "priority": 900,
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "index.default_pipeline": "ueba-normalized-event-ingress-1.1.0"
+    },
+    "data_stream_options": {
+      "failure_store": {
+        "enabled": true
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-normalized-event-ingress",
+    "semantic_version": "1.1.0"
+  }
+}

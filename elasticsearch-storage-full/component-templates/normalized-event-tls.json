@@ -1,0 +1,140 @@
+{
+  "template": {
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "source": {
+          "dynamic": false,
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "long"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "address": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "destination": {
+          "dynamic": false,
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "long"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "address": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "client": {
+          "type": "object",
+          "dynamic": false
+        },
+        "server": {
+          "type": "object",
+          "dynamic": false
+        },
+        "network": {
+          "properties": {
+            "transport": {
+              "type": "keyword"
+            },
+            "protocol": {
+              "type": "keyword"
+            },
+            "direction": {
+              "type": "keyword"
+            },
+            "community_id": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "observer": {
+          "dynamic": false,
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "hostname": {
+              "type": "keyword"
+            },
+            "ip": {
+              "type": "ip"
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "vendor": {
+              "type": "keyword"
+            },
+            "product": {
+              "type": "keyword"
+            }
+          }
+        },
+        "tls": {
+          "dynamic": false,
+          "properties": {
+            "version": {
+              "type": "keyword"
+            },
+            "version_protocol": {
+              "type": "keyword"
+            },
+            "cipher": {
+              "type": "keyword"
+            },
+            "established": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-normalized-event-tls",
+    "semantic_version": "1.1.0",
+    "role": "tls domain extension"
+  }
+}

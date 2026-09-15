@@ -1,0 +1,112 @@
+{
+  "template": {
+    "settings": {
+      "index.mapping.total_fields.limit": 500
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "organization": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "entity": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "subtype": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "display_name": {
+              "type": "keyword"
+            },
+            "status": {
+              "type": "keyword"
+            },
+            "first_seen": {
+              "type": "date"
+            },
+            "last_seen": {
+              "type": "date"
+            },
+            "criticality": {
+              "type": "keyword"
+            },
+            "attributes": {
+              "type": "flattened"
+            },
+            "source_refs": {
+              "type": "keyword"
+            }
+          }
+        },
+        "identifiers": {
+          "properties": {
+            "user_sid": {
+              "type": "keyword"
+            },
+            "uid": {
+              "type": "keyword"
+            },
+            "account": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "host_id": {
+              "type": "keyword"
+            },
+            "hostname": {
+              "type": "keyword"
+            },
+            "ip": {
+              "type": "ip"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "email": {
+              "type": "keyword"
+            }
+          }
+        },
+        "version": {
+          "type": "long"
+        },
+        "resolution": {
+          "properties": {
+            "version": {
+              "type": "keyword"
+            },
+            "updated_at": {
+              "type": "date"
+            },
+            "confidence": {
+              "type": "scaled_float",
+              "scaling_factor": 1000
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10000,
+  "_meta": {
+    "artifact": "ueba-entities",
+    "semantic_version": "1.0.0"
+  }
+}

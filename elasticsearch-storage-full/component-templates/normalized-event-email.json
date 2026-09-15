@@ -1,0 +1,144 @@
+{
+  "template": {
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "user": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "full_name": {
+              "type": "keyword"
+            },
+            "email": {
+              "type": "keyword"
+            },
+            "roles": {
+              "type": "keyword"
+            },
+            "target": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "domain": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "effective": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "domain": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "source": {
+          "dynamic": false,
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "long"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "address": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "destination": {
+          "dynamic": false,
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "long"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "address": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "email": {
+          "dynamic": false,
+          "properties": {
+            "message_id": {
+              "type": "keyword"
+            },
+            "from": {
+              "properties": {
+                "address": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "to": {
+              "properties": {
+                "address": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "cc": {
+              "properties": {
+                "address": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-normalized-event-email",
+    "semantic_version": "1.1.0",
+    "role": "email domain extension"
+  }
+}

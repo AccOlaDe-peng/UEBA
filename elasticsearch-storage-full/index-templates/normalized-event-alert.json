@@ -1,0 +1,26 @@
+{
+  "index_patterns": [
+    "logs-ueba.alert-*"
+  ],
+  "priority": 800,
+  "composed_of": [
+    "ueba-normalized-event-common@1.1.0",
+    "ueba-normalized-event-alert@1.1.0"
+  ],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "ueba-normalized-events-90d"
+    },
+    "data_stream_options": {
+      "failure_store": {
+        "enabled": true
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-normalized-event-alert",
+    "semantic_version": "1.1.0"
+  }
+}

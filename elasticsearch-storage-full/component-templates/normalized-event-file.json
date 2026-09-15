@@ -1,0 +1,171 @@
+{
+  "template": {
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "host": {
+          "dynamic": false,
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "hostname": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "ip": {
+              "type": "ip"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "architecture": {
+              "type": "keyword"
+            }
+          }
+        },
+        "user": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "full_name": {
+              "type": "keyword"
+            },
+            "email": {
+              "type": "keyword"
+            },
+            "roles": {
+              "type": "keyword"
+            },
+            "target": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "domain": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "effective": {
+              "properties": {
+                "id": {
+                  "type": "keyword"
+                },
+                "name": {
+                  "type": "keyword"
+                },
+                "domain": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "source": {
+          "dynamic": false,
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "long"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "address": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "destination": {
+          "dynamic": false,
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "long"
+            },
+            "mac": {
+              "type": "keyword"
+            },
+            "address": {
+              "type": "keyword"
+            },
+            "domain": {
+              "type": "keyword"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "packets": {
+              "type": "long"
+            }
+          }
+        },
+        "file": {
+          "dynamic": false,
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "path": {
+              "type": "keyword"
+            },
+            "size": {
+              "type": "long"
+            },
+            "mime_type": {
+              "type": "keyword"
+            },
+            "hash": {
+              "properties": {
+                "md5": {
+                  "type": "keyword"
+                },
+                "sha1": {
+                  "type": "keyword"
+                },
+                "sha256": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10100,
+  "_meta": {
+    "artifact": "ueba-normalized-event-file",
+    "semantic_version": "1.1.0",
+    "role": "file domain extension"
+  }
+}

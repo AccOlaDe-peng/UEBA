@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "description": "Source mapping rules produce ueba.route.domain; the common router only validates this contract.",
+  "allowed_domains": [
+    "authentication", "iam", "directory", "endpoint", "network", "dns",
+    "web", "tls", "file", "session", "email", "alert", "state", "metric"
+  ],
+  "windows_security_event_code": {
+    "4624": "authentication", "4625": "authentication", "4634": "session",
+    "4647": "session", "4648": "authentication", "4661": "directory",
+    "4662": "directory", "4670": "directory", "4673": "directory",
+    "4688": "endpoint", "4689": "endpoint", "4720": "iam",
+    "4722": "iam", "4723": "iam", "4724": "iam", "4725": "iam",
+    "4726": "iam", "4728": "iam", "4729": "iam", "4732": "iam",
+    "4733": "iam", "4738": "iam", "4740": "iam", "4741": "iam",
+    "4742": "iam", "4743": "iam", "4756": "iam", "4757": "iam",
+    "4768": "authentication", "4769": "authentication",
+    "4771": "authentication", "4776": "authentication"
+  },
+  "fixed_vendor_dataset": {
+    "zeek.conn": "network", "zeek.dns": "dns", "zeek.http": "web",
+    "zeek.ssl": "tls", "zeek.x509": "tls", "zeek.ocsp": "tls",
+    "zeek.rdp": "network", "zeek.kerberos": "authentication",
+    "zeek.ntlm": "authentication", "zeek.radius": "authentication",
+    "zeek.files": "file", "zeek.smb_files": "file", "zeek.smtp": "email",
+    "zeek.dhcp": "session", "zeek.notice": "alert", "zeek.intel": "alert",
+    "zeek.signatures": "alert", "zeek.software": "state",
+    "zeek.known_hosts": "state", "zeek.known_services": "state",
+    "zeek.sensor": "metric", "linux.web_access": "web",
+    "linux.package": "endpoint"
+  },
+  "conditional_vendor_dataset": {
+    "zeek.ssh": ["authentication", "network"],
+    "linux.auth": ["authentication", "session", "iam", "endpoint"],
+    "linux.audit": ["authentication", "session", "iam", "endpoint", "file"],
+    "linux.system": ["endpoint", "state"],
+    "linux.application": ["endpoint", "alert"]
+  },
+  "native_type_routes": {
+    "linux.audit": {
+      "EXECVE": "endpoint",
+      "SYSCALL": "endpoint",
+      "USER_LOGIN": "authentication",
+      "USER_AUTH": "authentication",
+      "USER_LOGOUT": "session",
+      "ADD_USER": "iam",
+      "DEL_USER": "iam",
+      "PATH": "file"
+    },
+    "linux.auth": {
+      "LOGIN_SUCCESS": "authentication",
+      "LOGIN_FAILURE": "authentication",
+      "LOGOUT": "session",
+      "USER_ADD": "iam",
+      "USER_DELETE": "iam",
+      "SUDO": "endpoint"
+    },
+    "zeek.ssh": {
+      "AUTH_SUCCESS": "authentication",
+      "AUTH_FAILURE": "authentication",
+      "CONNECTION": "network"
+    }
+  },
+  "contract": {
+    "input_identity": ["vendor.name", "vendor.product", "vendor.dataset", "vendor.schema_version"],
+    "source_payload": "vendor.payload",
+    "routing_output": ["ueba.route.domain", "ueba.route.rule_id", "ueba.route.version"]
+  }
+}

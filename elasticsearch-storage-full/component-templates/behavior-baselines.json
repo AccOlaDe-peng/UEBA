@@ -1,0 +1,127 @@
+{
+  "template": {
+    "settings": {
+      "index.mapping.total_fields.limit": 500
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "organization": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "baseline": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "status": {
+              "type": "keyword"
+            },
+            "scope": {
+              "type": "keyword"
+            },
+            "entity_id": {
+              "type": "keyword"
+            },
+            "entity_type": {
+              "type": "keyword"
+            },
+            "peer_group_id": {
+              "type": "keyword"
+            },
+            "feature_id": {
+              "type": "keyword"
+            },
+            "feature_version": {
+              "type": "keyword"
+            },
+            "mean": {
+              "type": "double"
+            },
+            "stddev": {
+              "type": "double"
+            },
+            "min": {
+              "type": "double"
+            },
+            "max": {
+              "type": "double"
+            },
+            "p50": {
+              "type": "double"
+            },
+            "p95": {
+              "type": "double"
+            },
+            "p99": {
+              "type": "double"
+            },
+            "sample_count": {
+              "type": "long"
+            },
+            "parameters": {
+              "type": "flattened"
+            }
+          }
+        },
+        "training": {
+          "properties": {
+            "start": {
+              "type": "date"
+            },
+            "end": {
+              "type": "date"
+            },
+            "completed_at": {
+              "type": "date"
+            },
+            "quality": {
+              "type": "keyword"
+            },
+            "input_count": {
+              "type": "long"
+            }
+          }
+        },
+        "model": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "version": {
+              "type": "keyword"
+            },
+            "algorithm": {
+              "type": "keyword"
+            }
+          }
+        },
+        "versions": {
+          "properties": {
+            "schema": {
+              "type": "keyword"
+            },
+            "mapping": {
+              "type": "keyword"
+            },
+            "resolution": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": 10000,
+  "_meta": {
+    "artifact": "ueba-behavior-baselines",
+    "semantic_version": "1.0.0"
+  }
+}

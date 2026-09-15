@@ -1,0 +1,26 @@
+{
+  "description": "Controlled entry point for normalized events: classify, validate and route",
+  "version": 10100,
+  "processors": [
+    { "pipeline": { "name": "ueba-normalized-event-classifier-1.1.0" } },
+    { "pipeline": { "name": "ueba-normalized-event-validate-1.1.0" } }
+  ],
+  "on_failure": [
+    { "set": { "field": "event.kind", "value": "pipeline_error" } },
+    { "set": { "field": "ueba.quality.status", "value": "invalid" } },
+    { "set": { "field": "ueba.quality.score", "value": 0.0 } },
+    { "set": { "field": "error.message", "value": "{{{_ingest.on_failure_message}}}" } },
+    { "set": { "field": "ueba.route.domain", "value": "quarantine" } },
+    { "set": { "field": "ueba.route.dataset", "value": "ueba.quarantine" } },
+    {
+      "reroute": {
+        "destination": {
+          "type": "logs",
+          "dataset": "ueba.quarantine",
+          "namespace": "{{{data_stream.namespace}}}"
+        }
+      }
+    }
+  ]
+}
+

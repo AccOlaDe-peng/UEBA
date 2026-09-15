@@ -1,0 +1,20 @@
+{
+  "index_patterns": [
+    "ueba-entity-risk-current-v*-*"
+  ],
+  "priority": 500,
+  "composed_of": [
+    "ueba-entity-risk-current@1.0.0"
+  ],
+  "template": {
+    "settings": {
+      "index.number_of_shards": 1,
+      "index.number_of_replicas": 1
+    }
+  },
+  "version": 10000,
+  "_meta": {
+    "artifact": "ueba-entity-risk-current",
+    "semantic_version": "1.0.0"
+  }
+}
