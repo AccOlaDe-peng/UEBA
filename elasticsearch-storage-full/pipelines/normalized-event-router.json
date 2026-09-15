@@ -10,11 +10,8 @@
     },
     {
       "reroute": {
-        "destination": {
-          "type": "logs",
-          "dataset": "{{{ueba.route.dataset}}}",
-          "namespace": "{{{data_stream.namespace}}}"
-        }
+        "dataset": "{{{ueba.route.dataset}}}",
+        "namespace": "{{{data_stream.namespace}}}"
       }
     }
   ],
@@ -57,11 +54,8 @@
     },
     {
       "reroute": {
-        "destination": {
-          "type": "logs",
-          "dataset": "ueba.quarantine",
-          "namespace": "{{{data_stream.namespace}}}"
-        }
+        "dataset": "ueba.quarantine",
+        "namespace": "{{{data_stream.namespace}}}"
       }
     }
   ]

@@ -1,7 +1,8 @@
 {
   "template": {
     "settings": {
-      "index.mapping.total_fields.limit": 500
+      "index.mapping.total_fields.limit": 500,
+      "index.auto_expand_replicas": "0-1"
     },
     "mappings": {
       "dynamic": "strict",

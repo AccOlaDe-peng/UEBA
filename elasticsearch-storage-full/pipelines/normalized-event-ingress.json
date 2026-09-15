@@ -14,13 +14,9 @@
     { "set": { "field": "ueba.route.dataset", "value": "ueba.quarantine" } },
     {
       "reroute": {
-        "destination": {
-          "type": "logs",
-          "dataset": "ueba.quarantine",
-          "namespace": "{{{data_stream.namespace}}}"
-        }
+        "dataset": "ueba.quarantine",
+        "namespace": "{{{data_stream.namespace}}}"
       }
     }
   ]
 }
-

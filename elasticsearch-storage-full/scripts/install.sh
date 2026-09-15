@@ -5,6 +5,7 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 es_url="${ES_URL:-http://localhost:9200}"
 curl_args=(-sS --fail-with-body -H 'Content-Type: application/json')
 if [[ -n "${ES_API_KEY:-}" ]]; then curl_args+=(-H "Authorization: ApiKey ${ES_API_KEY}"); fi
+if [[ -n "${ES_USERNAME:-}" ]]; then curl_args+=(-u "${ES_USERNAME}:${ES_PASSWORD:?ES_PASSWORD is required}"); fi
 
 put_json() {
   local path="$1" file="$2"
@@ -41,7 +42,7 @@ done
 create_versioned_index() {
   local index="$1" alias="$2"
   if ! curl "${curl_args[@]}" -I "${es_url}/${index}" >/dev/null 2>&1; then
-    curl "${curl_args[@]}" -X PUT "${es_url}/${index}" --data-binary "{\"aliases\":{\"${alias}\":{\"is_write_index\":true}}}" >/dev/null
+    curl "${curl_args[@]}" -X PUT "${es_url}/${index}" --data-binary "{\"settings\":{\"index.number_of_replicas\":${UEBA_REPLICAS:-0}},\"aliases\":{\"${alias}\":{\"is_write_index\":true}}}" >/dev/null
     echo "created ${index} with alias ${alias}"
   fi
 }

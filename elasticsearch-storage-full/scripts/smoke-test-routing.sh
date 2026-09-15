@@ -5,6 +5,7 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 es_url="${ES_URL:-http://localhost:9200}"
 curl_args=(-sS --fail-with-body -H 'Content-Type: application/json')
 if [[ -n "${ES_API_KEY:-}" ]]; then curl_args+=(-H "Authorization: ApiKey ${ES_API_KEY}"); fi
+if [[ -n "${ES_USERNAME:-}" ]]; then curl_args+=(-u "${ES_USERNAME}:${ES_PASSWORD:?ES_PASSWORD is required}"); fi
 
 "${root_dir}/scripts/validate.sh"
 

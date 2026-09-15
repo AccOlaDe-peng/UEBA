@@ -209,3 +209,5 @@ export ES_API_KEY='...'
 ```
 
 安装脚本不会删除现有索引。生产升级应使用不可变版本名，经过模拟、样例回放、影子运行和切换后再停用旧版本。
+
+单节点测试环境使用 `index.auto_expand_replicas=0-1`，避免产生无法分配的副本；增加数据节点后可自动扩展到一个副本。实际环境验证结果见 [deployment-validation-2026-09-15.md](deployment-validation-2026-09-15.md)。
